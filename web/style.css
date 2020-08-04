@@ -1,0 +1,77 @@
+body {
+    margin: 0;
+    height: 100%;
+    background-color: #f6f8fa;
+}
+
+#container {
+    box-sizing: border-box;
+    padding: 80px;
+    height: 100%;
+}
+
+#terminal {
+    height: 100%;
+    border-radius: 15px;
+    background-color: #272822;
+    box-shadow: inset 0 0 10px 3px #101010;
+}
+
+.terminal {
+    --color: #F8F8F2;
+    --background: #272822;
+    --size: 1.7;
+    --link-color: #F8F8F2;
+    font-family: 'Fira Code', monospace;
+}
+
+.terminal,
+.terminal .terminal-fill {
+    padding: 2.5em;
+}
+
+.terminal,
+.terminal-output> :not(.raw) span,
+.terminal-output> :not(.raw) a,
+.terminal-output> :not(.raw) div,
+.cmd,
+.cmd span,
+.cmd div {
+    font-family: 'Fira Code', monospace;
+}
+
+.terminal-output>div {
+    padding-bottom: 1em;
+}
+
+.terminal-output>div.terminal-command {
+    padding-bottom: 1em;
+}
+
+.github-corner:hover .octo-arm {
+    animation: octocat-wave 560ms ease-in-out
+}
+
+@keyframes octocat-wave {
+    0%,
+    100% {
+        transform: rotate(0)
+    }
+    20%,
+    60% {
+        transform: rotate(-25deg)
+    }
+    40%,
+    80% {
+        transform: rotate(10deg)
+    }
+}
+
+@media (max-width:500px) {
+    .github-corner:hover .octo-arm {
+        animation: none
+    }
+    .github-corner .octo-arm {
+        animation: octocat-wave 560ms ease-in-out
+    }
+}
