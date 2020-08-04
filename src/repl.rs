@@ -81,31 +81,27 @@ impl Repl {
             Command::List => {
                 let mut lines = self
                     .env
-                    .0
-                    .iter()
-                    .sorted_by(|(a_var, a_expr), (b_var, b_expr)| {
-                        a_expr
-                            .partial_cmp(&b_expr)
+                    .iter_idents()
+                    .sorted_by(|(a_var, a_value), (b_var, b_value)| {
+                        a_value
+                            .partial_cmp(&b_value)
                             .unwrap_or(std::cmp::Ordering::Equal)
                             .then_with(|| a_var.cmp(&b_var))
                     })
-                    .group_by(|(_, expr)| *expr)
+                    .group_by(|(_, value)| *value)
                     .into_iter()
-                    .map(|(expr, vars)| {
+                    .map(|(value, vars)| {
                         let vars = vars.map(|(var, _)| var).join(" = ");
-                        format!("{} = {}", vars, expr)
+                        format!("{} = {}", vars, value)
                     })
                     .sorted();
 
                 Response::Message(lines.join("\n"))
             }
-            Command::Delete(var) => {
-                if self.env.0.remove(&var).is_some() {
-                    Response::Empty
-                } else {
-                    Response::Message(format!("{} {}", "Unknown variable:".red(), var))
-                }
-            }
+            Command::Delete(var) => match self.env.delete_ident(&var) {
+                Ok(_) => Response::Empty,
+                Err(e) => Response::Message(e.to_string().red().to_string()),
+            },
             Command::Reset => {
                 self.env = Environment::new();
                 Response::Empty
@@ -176,7 +172,7 @@ fn parse_command(line: &str) -> Option<Command> {
 
 fn expand_expr_once(expr: &Expression, env: &Environment) -> EvalResult<Expression> {
     Ok(match expr {
-        Expression::Identifier(ident) => env.0.get(ident).unwrap_or(expr).clone(),
+        Expression::Identifier(ident) => env.resolve_ident(ident).unwrap_or(expr).clone(),
         Expression::UnaryOp(op, x) => {
             let x = expand_expr_once(x, env)?;
             Expression::UnaryOp(*op, Box::new(x))

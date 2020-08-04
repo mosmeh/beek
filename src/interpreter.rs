@@ -1,27 +1,48 @@
 use super::language::*;
 use std::collections::HashMap;
+use std::fmt::{self, Display};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum EvalError {
     #[error("Encountered infinity or NaN")]
     NumericalError,
-    #[error("Detected recursive definition of variable {0}")]
-    RecursiveDefinition(Identifier),
+    #[error("{0}")]
+    AssignError(String),
+    #[error("Unknown identifier: {0}")]
+    ReferenceError(Identifier),
 }
 
 pub type EvalResult<T> = std::result::Result<T, EvalError>;
 
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum NamedValue {
+    Variable(Expression),
+    Constant(Expression),
+}
+
+impl Display for NamedValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        match self {
+            Self::Variable(x) => write!(f, "{}", x),
+            Self::Constant(x) => write!(f, "{}", x),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
-pub struct Environment(pub HashMap<Identifier, Expression>);
+pub struct Environment(HashMap<Identifier, NamedValue>);
 
 impl Default for Environment {
     fn default() -> Self {
         use std::f64::consts::*;
         Self(
-            vec![("pi", PI), ("π", PI), ("e", E)]
+            vec![("ans", 0.0), ("_", 0.0), ("pi", PI), ("π", PI), ("e", E)]
                 .into_iter()
-                .map(|(var, x)| (Identifier(var.to_string()), Expression::Number(Number(x))))
+                .map(|(var, x)| {
+                    let expr = Expression::Number(Number(x));
+                    (Identifier(var.to_string()), NamedValue::Constant(expr))
+                })
                 .collect(),
         )
     }
@@ -30,6 +51,43 @@ impl Default for Environment {
 impl Environment {
     pub fn new() -> Self {
         Default::default()
+    }
+
+    pub fn iter_idents(&self) -> impl Iterator<Item = (&Identifier, &NamedValue)> {
+        self.0.iter()
+    }
+
+    pub fn delete_ident(&mut self, ident: &Identifier) -> Result<(), EvalError> {
+        if self.0.remove(ident).is_some() {
+            Ok(())
+        } else {
+            Err(EvalError::ReferenceError(ident.clone()))
+        }
+    }
+
+    pub fn resolve_ident(&self, ident: &Identifier) -> Option<&Expression> {
+        self.0.get(ident).map(|value| match value {
+            NamedValue::Variable(x) => x,
+            NamedValue::Constant(x) => x,
+        })
+    }
+
+    pub fn assign_var(&mut self, ident: &Identifier, expr: &Expression) -> Result<(), EvalError> {
+        match self.0.get_mut(ident) {
+            Some(NamedValue::Variable(var)) => {
+                *var = expr.clone();
+                Ok(())
+            }
+            Some(NamedValue::Constant(_)) => Err(EvalError::AssignError(format!(
+                "Cannot assign to a constant {}",
+                ident
+            ))),
+            None => {
+                self.0
+                    .insert(ident.clone(), NamedValue::Variable(expr.clone()));
+                Ok(())
+            }
+        }
     }
 }
 
@@ -40,7 +98,10 @@ pub fn exec_stmt(stmt: &Statement, env: &mut Environment) -> EvalResult<Expressi
         Statement::ImmediateAssignment(assignment) => immediate_assign(assignment, env)?,
     };
     for var in &["ans", "_"] {
-        env.0.insert(Identifier(var.to_string()), value.clone());
+        env.0.insert(
+            Identifier(var.to_string()),
+            NamedValue::Constant(value.clone()),
+        );
     }
 
     Ok(value)
@@ -50,7 +111,7 @@ fn eval_expr(expr: &Expression, env: &Environment) -> EvalResult<Expression> {
     match expr {
         Expression::Number(_) => Ok(expr.clone()),
         Expression::Identifier(ident) => {
-            if let Some(x) = env.0.get(ident) {
+            if let Some(x) = env.resolve_ident(ident) {
                 eval_expr(x, env)
             } else {
                 Ok(expr.clone())
@@ -81,22 +142,28 @@ fn lazy_assign(assignment: &Assignment, env: &mut Environment) -> EvalResult<Exp
 
     // TODO: detect recursive definition and eval simultaneously
     if expr_contains_ident(expr, var, env) {
-        return Err(EvalError::RecursiveDefinition(var.clone()));
+        return Err(EvalError::AssignError(format!(
+            "Detected recursive definition of variable {}",
+            var
+        )));
     }
 
     let evaluated = eval_expr(expr, env)?;
-    env.0.insert(var.clone(), expr.clone());
+    env.assign_var(var, expr)?;
     Ok(evaluated)
 }
 
 fn immediate_assign(assignment: &Assignment, env: &mut Environment) -> EvalResult<Expression> {
     let Assignment { var, expr } = assignment;
     if expr_contains_ident(expr, var, env) {
-        return Err(EvalError::RecursiveDefinition(var.clone()));
+        return Err(EvalError::AssignError(format!(
+            "Detected recursive definition of variable {}",
+            var
+        )));
     }
 
     let evaluated = eval_expr(expr, env)?;
-    env.0.insert(var.clone(), evaluated.clone());
+    env.assign_var(var, expr)?;
     Ok(evaluated)
 }
 
@@ -149,7 +216,7 @@ fn expr_contains_ident(expr: &Expression, ident: &Identifier, env: &Environment)
     match expr {
         Expression::Identifier(x) if x == ident => true,
         Expression::Identifier(x) => {
-            if let Some(x) = env.0.get(x) {
+            if let Some(x) = env.resolve_ident(x) {
                 expr_contains_ident(x, ident, env)
             } else {
                 false
