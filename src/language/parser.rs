@@ -30,7 +30,8 @@ where
     I::Range: PartialEq,
     I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
 {
-    lex(many(lex(stmt()).skip(skip_many(lex(char(';'))))))
+    let semicolons = || skip_many(lex(char(';')));
+    optional(semicolons()).with(lex(many(lex(stmt()).skip(semicolons()))))
 }
 
 fn stmt<I>() -> impl Parser<I, Output = Statement>
