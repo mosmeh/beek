@@ -1,20 +1,16 @@
 use super::*;
 use combine::easy::{self, Error};
-use combine::parser::char::{alpha_num, char, digit, letter, spaces, string};
+use combine::parser::char::{alpha_num, char, crlf, digit, letter, newline, string};
 use combine::parser::combinator::recognize;
 use combine::ParseError;
 use combine::{
-    any, attempt, choice, eof, many, one_of, optional, parser, skip_many, skip_many1, EasyParser,
-    Parser, Stream,
+    attempt, choice, eof, many, one_of, optional, parser, satisfy, skip_many, skip_many1,
+    EasyParser, Parser, Stream,
 };
 use itertools::Itertools;
 
 pub fn parse(input: &str) -> Result<Vec<Statement>, easy::Errors<char, &str, usize>> {
-    let comment = (char('#'), skip_many(any()));
-    let mut code = optional(spaces())
-        .with(lex(stmt_list()))
-        .skip(optional(comment))
-        .skip(eof());
+    let mut code = optional(spaces()).with(lex(stmt_list())).skip(eof());
 
     code.easy_parse(input)
         .map(|(parsed, rem)| {
@@ -30,8 +26,15 @@ where
     I::Range: PartialEq,
     I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
 {
-    let semicolons = || skip_many(lex(char(';')));
-    optional(semicolons()).with(lex(many(lex(stmt()).skip(semicolons()))))
+    let comment = || (char('#'), skip_many(satisfy(|c| c != '\n' && c != '\r')));
+    let delims = || {
+        skip_many(
+            comment()
+                .map(|_| ())
+                .or(lex(choice((char(';'), newline(), attempt(crlf())))).map(|_| ())),
+        )
+    };
+    optional(delims()).with(many(lex(stmt()).skip(delims())))
 }
 
 fn stmt<I>() -> impl Parser<I, Output = Statement>
@@ -291,4 +294,14 @@ where
     I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
 {
     one_of("-+".chars())
+}
+
+fn spaces<I>() -> impl Parser<I, Output = ()>
+where
+    I: Stream<Token = char>,
+    I::Error: ParseError<I::Token, I::Range, I::Position>,
+{
+    let space =
+        satisfy(|c: char| c != '\n' && c != '\r' && c.is_whitespace()).expected("whitespace");
+    skip_many(space).expected("whitespaces")
 }

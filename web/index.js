@@ -31,10 +31,10 @@ import ('./pkg').then(({ version, Repl, ResponseKind }) => {
 
     $(document).ready(() => {
         $("#terminal").terminal(
-            function(line) {
+            function(input) {
                 setColorscheme();
 
-                const response = repl.run(line);
+                const response = repl.run(input);
                 switch (response.kind) {
                     case ResponseKind.Clear:
                         this.clear();

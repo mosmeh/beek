@@ -49,8 +49,8 @@ impl Repl {
         }
     }
 
-    pub fn run(&mut self, line: &str) -> Response {
-        match self.inner.run(line) {
+    pub fn run(&mut self, input: &str) -> Response {
+        match self.inner.run(input) {
             repl::Response::Empty => Response {
                 message: "".into(),
                 kind: ResponseKind::Message,

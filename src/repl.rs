@@ -45,41 +45,43 @@ impl Repl {
         Default::default()
     }
 
-    pub fn run(&mut self, line: &str) -> Response {
-        if let Some(cmd) = parse_command(line) {
+    pub fn run(&mut self, input: &str) -> Response {
+        if let Some(cmd) = parse_command(input) {
             return self.exec_command(cmd);
         }
 
-        let stmts = match parse(&line[..]) {
+        let stmts = match parse(&input[..]) {
             Ok(x) => x,
             Err(e) => {
                 return Response::Message(e.to_string().trim().red().to_string());
             }
         };
 
-        let mut lines = Vec::new();
+        let mut msg_lines = Vec::new();
         for stmt in stmts {
-            lines.push(format!("{}", stmt));
+            msg_lines.push(format!("{}", stmt));
 
             match exec_stmt(&stmt, &mut self.env) {
                 Ok(value) => {
-                    lines.push(self.format_eval_steps(&stmt, &value));
+                    msg_lines.push(self.format_eval_steps(&stmt, &value));
                 }
                 Err(e) => {
-                    lines.push(e.to_string().red().to_string());
-                    return Response::Message(lines.join("\n"));
+                    msg_lines.push(e.to_string().red().to_string());
+                    return Response::Message(msg_lines.join("\n"));
                 }
             }
         }
 
-        Response::Message(lines.join("\n"))
+        Response::Message(msg_lines.join("\n"))
     }
 
     fn exec_command(&mut self, cmd: Command) -> Response {
         match cmd {
-            Command::Help => Response::Message("help list delete reset clear quit".to_string()),
+            Command::Help => Response::Message(
+                "Documentation: https://github.com/mosmeh/beek#reference".to_string(),
+            ),
             Command::List => {
-                let mut lines = self
+                let mut msg_lines = self
                     .env
                     .iter_idents()
                     .sorted_by(|(a_var, a_value), (b_var, b_value)| {
@@ -96,7 +98,7 @@ impl Repl {
                     })
                     .sorted();
 
-                Response::Message(lines.join("\n"))
+                Response::Message(msg_lines.join("\n"))
             }
             Command::Delete(var) => match self.env.delete_ident(&var) {
                 Ok(_) => Response::Empty,
@@ -151,8 +153,10 @@ impl Repl {
     }
 }
 
-fn parse_command(line: &str) -> Option<Command> {
-    let mut token = line.trim().split_whitespace();
+fn parse_command(input: &str) -> Option<Command> {
+    // TODO: support multi line input
+
+    let mut token = input.trim().split('\n').next()?.trim().split_whitespace();
     let cmd = token.next()?.to_ascii_lowercase();
     let arg = token.next().unwrap_or("");
 
