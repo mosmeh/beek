@@ -56,7 +56,7 @@ impl Repl {
             return self.exec_command(cmd);
         }
 
-        let stmts = match parse(&input[..]) {
+        let stmts = match parse(input) {
             Ok(x) => x,
             Err(e) => {
                 return Response::Message(e.to_string().trim().red().to_string());

@@ -13,9 +13,10 @@ use combine::{
 use itertools::Itertools;
 
 pub fn parse(input: &str) -> Result<Vec<Statement>, easy::Errors<char, &str, usize>> {
-    let mut code = lex(stmt_list()).skip(eof());
+    let mut script = lex(stmt_list()).skip(eof());
 
-    code.easy_parse(input)
+    script
+        .easy_parse(input)
         .map(|(parsed, rem)| {
             assert!(rem.is_empty());
             parsed
