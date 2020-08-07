@@ -1,16 +1,19 @@
-use super::*;
+use super::{
+    BinaryOp, Expression, FunctionDefinition, Identifier, Number, Statement, UnaryOp,
+    VariableAssignment,
+};
 use combine::easy::{self, Error};
 use combine::parser::char::{alpha_num, char, crlf, digit, letter, newline, string};
 use combine::parser::combinator::recognize;
 use combine::ParseError;
 use combine::{
-    attempt, choice, eof, many, one_of, optional, parser, satisfy, skip_many, skip_many1,
-    EasyParser, Parser, Stream,
+    attempt, between, choice, eof, many, one_of, optional, parser, satisfy, sep_by, skip_many,
+    skip_many1, EasyParser, Parser, Stream,
 };
 use itertools::Itertools;
 
 pub fn parse(input: &str) -> Result<Vec<Statement>, easy::Errors<char, &str, usize>> {
-    let mut code = optional(spaces()).with(lex(stmt_list())).skip(eof());
+    let mut code = lex(stmt_list()).skip(eof());
 
     code.easy_parse(input)
         .map(|(parsed, rem)| {
@@ -27,14 +30,28 @@ where
     I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
 {
     let comment = || (char('#'), skip_many(satisfy(|c| c != '\n' && c != '\r')));
-    let delims = || {
-        skip_many(
-            comment()
-                .map(|_| ())
-                .or(lex(choice((char(';'), newline(), attempt(crlf())))).map(|_| ())),
-        )
-    };
-    optional(delims()).with(many(lex(stmt()).skip(delims())))
+    let nl = || newline().or(attempt(crlf()));
+
+    // map(|_| ()) is just for matching types
+    sep_by(
+        optional(spaces()).with(lex(optional(stmt()))),
+        choice((
+            lex(char(';')).map(|_| ()),
+            attempt(nl()).map(|_| ()),
+            attempt(comment().and(nl())).map(|_| ()),
+        )),
+    )
+    .skip(optional(choice((
+        lex(char(';')).map(|_| ()),
+        attempt(comment()).map(|_| ()),
+    ))))
+    .map(|maybe_stmts: Vec<_>| {
+        maybe_stmts
+            .iter()
+            .filter_map(|x| x.as_ref())
+            .cloned()
+            .collect()
+    })
 }
 
 fn stmt<I>() -> impl Parser<I, Output = Statement>
@@ -44,8 +61,8 @@ where
     I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
 {
     lex(choice((
-        attempt(immediate_assign().map(Statement::ImmediateAssignment)),
-        attempt(lazy_assign().map(Statement::LazyAssignment)),
+        attempt(def_func().map(Statement::FunctionDefinition)),
+        attempt(assign_var().map(Statement::VariableAssignment)),
         expr().map(Statement::Expression),
     )))
     .expected("statement")
@@ -73,32 +90,41 @@ parser! {
     }
 }
 
-fn lazy_assign<I>() -> impl Parser<I, Output = Assignment>
+fn assign_var<I>() -> impl Parser<I, Output = VariableAssignment>
 where
     I: Stream<Token = char, Error = easy::ParseError<I>>,
     I::Range: PartialEq,
     I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
 {
     (ident(), lex(char('=')), expr())
-        .map(|a| Assignment {
-            var: a.0,
+        .map(|a| VariableAssignment {
+            name: a.0,
             expr: a.2,
         })
-        .expected("assignment")
+        .expected("variable assignment")
 }
 
-fn immediate_assign<I>() -> impl Parser<I, Output = Assignment>
+fn def_func<I>() -> impl Parser<I, Output = FunctionDefinition>
 where
     I: Stream<Token = char, Error = easy::ParseError<I>>,
     I::Range: PartialEq,
     I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
 {
-    (ident(), lex(string(":=")), expr())
-        .map(|a| Assignment {
-            var: a.0,
-            expr: a.2,
+    let func = ident()
+        .and(between(
+            lex(char('(')),
+            lex(char(')')),
+            sep_by(lex(ident()), lex(char(','))),
+        ))
+        .expected("function");
+
+    (func, lex(char('=')), expr())
+        .map(|((name, arg_names), _, expr)| FunctionDefinition {
+            name,
+            arg_names,
+            expr,
         })
-        .expected("assignment")
+        .expected("function definition")
 }
 
 fn add<I>() -> impl Parser<I, Output = Expression>
@@ -114,8 +140,8 @@ where
                 .or(char('-').map(|_| BinaryOp::Subtract)))
             .and(mul()),
         ))
-        .map(|(expr, vec): (_, Vec<_>)| {
-            vec.into_iter().fold(expr, |a, (op, b)| {
+        .map(|(lhs, rhs): (_, Vec<_>)| {
+            rhs.into_iter().fold(lhs, |a, (op, b)| {
                 Expression::BinaryOp(op, Box::new(a), Box::new(b))
             })
         })
@@ -135,8 +161,8 @@ where
                 .or(char('%').map(|_| BinaryOp::Modulo)))
             .and(negate()),
         ))
-        .map(|(expr, vec): (_, Vec<_>)| {
-            vec.into_iter().fold(expr, |a, (op, b)| {
+        .map(|(lhs, rhs): (_, Vec<_>)| {
+            rhs.into_iter().fold(lhs, |a, (op, b)| {
                 Expression::BinaryOp(op, Box::new(a), Box::new(b))
             })
         })
@@ -165,8 +191,8 @@ where
 {
     exp()
         .and(many(spaces().with(exp())))
-        .map(|(expr, vec): (_, Vec<_>)| {
-            vec.into_iter().fold(expr, |a, b| {
+        .map(|(lhs, rhs): (_, Vec<_>)| {
+            rhs.into_iter().fold(lhs, |a, b| {
                 Expression::BinaryOp(BinaryOp::Multiply, Box::new(a), Box::new(b))
             })
         })
@@ -182,10 +208,10 @@ where
         .and(many(
             lex(string("^").or(attempt(string("**")))).with(factorial()),
         ))
-        .map(|(expr, vec): (_, Vec<_>)| {
+        .map(|(lhs, rhs): (_, Vec<_>)| {
             // power is right associative
-            std::iter::once(expr)
-                .chain(vec.into_iter())
+            std::iter::once(lhs)
+                .chain(rhs.into_iter())
                 .rev()
                 .fold1(|a, b| Expression::BinaryOp(BinaryOp::Power, Box::new(b), Box::new(a)))
                 .unwrap()
@@ -227,8 +253,9 @@ parser! {
     {
         choice((
             parens(),
-            ident().map(Expression::Identifier),
             number().map(Expression::Number),
+            attempt(apply_func()),
+            ident().map(Expression::Variable),
         ))
     }
 }
@@ -239,7 +266,23 @@ where
     I::Range: PartialEq,
     I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
 {
-    lex(char('(')).with(lex(expr())).skip(lex(char(')')))
+    between(lex(char('(')), lex(char(')')), lex(expr())).expected("parentheses")
+}
+
+fn apply_func<I>() -> impl Parser<I, Output = Expression>
+where
+    I: Stream<Token = char, Error = easy::ParseError<I>>,
+    I::Range: PartialEq,
+    I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
+{
+    ident()
+        .and(between(
+            lex(char('(')),
+            lex(char(')')),
+            sep_by(lex(expr()), lex(char(','))),
+        ))
+        .map(|(name, args)| Expression::Function(name, args))
+        .expected("function")
 }
 
 fn number<I>() -> impl Parser<I, Output = Number>
@@ -248,7 +291,6 @@ where
     I::Range: PartialEq,
     I::Error: ParseError<I::Token, I::Range, I::Position, StreamError = Error<I::Token, I::Range>>,
 {
-    // map(|_| ()) is just for matching types
     let without_int_part = (char('.'), skip_many1(digit())).map(|_| ());
     let with_int_part = (
         skip_many1(digit()),

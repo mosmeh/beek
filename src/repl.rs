@@ -1,8 +1,14 @@
-use crate::interpreter::*;
-use crate::language::*;
-use colored::*;
+use crate::interpreter::env::{Environment, NamedItem};
+use crate::interpreter::exec_stmt;
+use crate::language::{parse, Identifier};
+use colored::Colorize;
 use itertools::Itertools;
 use std::fmt::{self, Display};
+
+static COMMANDS: &[&str] = &[
+    "help", "?", "list", "ls", "ll", "dir", "delete", "del", "rm", "reset", "clear", "cls", "quit",
+    "exit",
+];
 
 #[derive(Debug, Clone, PartialEq)]
 enum Command {
@@ -62,17 +68,26 @@ impl Repl {
             msg_lines.push(format!("{}", stmt));
 
             match exec_stmt(&stmt, &mut self.env) {
-                Ok(value) => {
-                    msg_lines.push(self.format_eval_steps(&stmt, &value));
+                Ok(Some(value)) => {
+                    msg_lines.push(format!(" = {}", value));
                 }
                 Err(e) => {
                     msg_lines.push(e.to_string().red().to_string());
                     return Response::Message(msg_lines.join("\n"));
                 }
+                _ => (),
             }
         }
 
         Response::Message(msg_lines.join("\n"))
+    }
+
+    pub fn completion_candidates(&self) -> impl Iterator<Item = &str> {
+        COMMANDS
+            .iter()
+            .copied()
+            .chain(self.env.iter().map(|(name, _)| name.0.as_str()))
+            .sorted()
     }
 
     fn exec_command(&mut self, cmd: Command) -> Response {
@@ -81,26 +96,35 @@ impl Repl {
                 "Documentation: https://github.com/mosmeh/beek#reference".to_string(),
             ),
             Command::List => {
-                let mut msg_lines = self
-                    .env
-                    .iter_idents()
-                    .sorted_by(|(a_var, a_value), (b_var, b_value)| {
-                        a_value
-                            .partial_cmp(&b_value)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                            .then_with(|| a_var.cmp(&b_var))
-                    })
-                    .group_by(|(_, value)| *value)
-                    .into_iter()
-                    .map(|(value, vars)| {
-                        let vars = vars.map(|(var, _)| var).join(" = ");
-                        format!("{} = {}", vars, value)
-                    })
-                    .sorted();
+                let mut msg_lines = vec!["Variables and constants:".to_string()];
+                msg_lines.extend(
+                    self.env
+                        .iter()
+                        .filter_map(|(name, item)| {
+                            if let NamedItem::Field(field) = item {
+                                Some((name, field))
+                            } else {
+                                None
+                            }
+                        })
+                        .sorted_by(|(a_var, a_value), (b_var, b_value)| {
+                            a_value
+                                .partial_cmp(&b_value)
+                                .unwrap_or(std::cmp::Ordering::Equal)
+                                .then_with(|| a_var.cmp(&b_var))
+                        })
+                        .group_by(|(_, value)| *value)
+                        .into_iter()
+                        .map(|(value, vars)| {
+                            let vars = vars.map(|(var, _)| var).join(" = ");
+                            format!("{} = {}", vars, value)
+                        })
+                        .sorted(),
+                );
 
                 Response::Message(msg_lines.join("\n"))
             }
-            Command::Delete(var) => match self.env.delete_ident(&var) {
+            Command::Delete(var) => match self.env.delete(&var) {
                 Ok(_) => Response::Empty,
                 Err(e) => Response::Message(e.to_string().red().to_string()),
             },
@@ -110,45 +134,6 @@ impl Repl {
             }
             Command::Clear => Response::ClearScreen,
             Command::Quit => Response::Quit,
-        }
-    }
-
-    fn format_eval_steps(&self, stmt: &Statement, final_value: &Expression) -> String {
-        let expr = match stmt {
-            Statement::Expression(expr) => expr,
-            Statement::LazyAssignment(Assignment { var: _, expr }) => expr,
-            Statement::ImmediateAssignment(Assignment { var: _, expr }) => expr,
-        };
-        let mut expr = expr.clone();
-
-        let mut steps = Vec::new();
-        loop {
-            let before = expr.clone();
-
-            for f in &[expand_expr_once, eval_expr_once] {
-                if let Ok(evaluated) = f(&expr, &self.env) {
-                    if evaluated != expr {
-                        steps.push(evaluated.clone());
-                        if steps.len() >= 3 {
-                            break;
-                        }
-
-                        expr = evaluated;
-                    }
-                } else {
-                    return format!(" = {}", final_value);
-                }
-            }
-
-            if expr == before {
-                break;
-            }
-        }
-
-        match steps.len() {
-            0 | 1 => format!(" = {}", final_value),
-            2 => format!(" = {} = {}", steps[0], final_value),
-            _ => format!(" = {} = ... = {}", steps[0], final_value),
         }
     }
 }
@@ -171,43 +156,5 @@ fn parse_command(input: &str) -> Option<Command> {
         "clear" | "cls" => Some(Command::Clear),
         "quit" | "exit" => Some(Command::Quit),
         _ => None,
-    }
-}
-
-fn expand_expr_once(expr: &Expression, env: &Environment) -> EvalResult<Expression> {
-    Ok(match expr {
-        Expression::Identifier(ident) => env.resolve_ident(ident).unwrap_or(expr).clone(),
-        Expression::UnaryOp(op, x) => {
-            let x = expand_expr_once(x, env)?;
-            Expression::UnaryOp(*op, Box::new(x))
-        }
-        Expression::BinaryOp(op, a, b) => {
-            let (a, b) = (expand_expr_once(a, env)?, expand_expr_once(b, env)?);
-            Expression::BinaryOp(*op, Box::new(a), Box::new(b))
-        }
-        _ => expr.clone(),
-    })
-}
-
-fn eval_expr_once(expr: &Expression, env: &Environment) -> EvalResult<Expression> {
-    match expr {
-        Expression::UnaryOp(op, x) => {
-            let x = eval_expr_once(x, env)?;
-            if let Expression::Number(x) = x {
-                Ok(Expression::Number(op.apply(x)?))
-            } else {
-                Ok(Expression::UnaryOp(*op, Box::new(x)))
-            }
-        }
-        Expression::BinaryOp(op, a, b) => {
-            let (a, b) = (eval_expr_once(a, env)?, eval_expr_once(b, env)?);
-            if let Expression::Number(a) = a {
-                if let Expression::Number(b) = b {
-                    return Ok(Expression::Number(op.apply(a, b)?));
-                }
-            }
-            Ok(Expression::BinaryOp(*op, Box::new(a), Box::new(b)))
-        }
-        _ => Ok(expr.clone()),
     }
 }

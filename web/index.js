@@ -26,12 +26,12 @@ function setColorscheme() {
     };
 }
 
-import ('./pkg').then(({ version, Repl, ResponseKind }) => {
+import('./pkg').then(({ version, Repl, ResponseKind }) => {
     const repl = new Repl();
 
     $(document).ready(() => {
         $("#terminal").terminal(
-            function(input) {
+            function (input) {
                 setColorscheme();
 
                 const response = repl.run(input);
@@ -46,9 +46,12 @@ import ('./pkg').then(({ version, Repl, ResponseKind }) => {
 
                 return response.message;
             }, {
-                "clear": false,
-                "greetings": `Welcome to [[b;#a6e22e;]beek] ${version()}`,
-            }
+            clear: false,
+            completion: function (_, cb) {
+                cb(repl.completion_candidates().split('\n'))
+            },
+            greetings: `Welcome to [[b;#a6e22e;]beek] ${version()}`,
+        }
         );
     });
 }).catch(console.error);

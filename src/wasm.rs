@@ -1,6 +1,10 @@
 use crate::repl;
 use wasm_bindgen::prelude::*;
 
+// HACK:
+// Returning String or Vec<String> results in "exported global cannot be mutable" error
+// so we substitute them with JsValue
+
 #[wasm_bindgen(start)]
 pub fn main() {
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
@@ -72,5 +76,14 @@ impl Repl {
                 }
             }
         }
+    }
+
+    pub fn completion_candidates(&self) -> JsValue {
+        self.inner
+            .completion_candidates()
+            .map(|x| x.to_string())
+            .collect::<Vec<_>>()
+            .join("\n")
+            .into()
     }
 }

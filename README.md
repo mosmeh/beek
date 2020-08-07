@@ -18,16 +18,31 @@ cargo install --path .
 
 ## Reference
 
-### Operators (from highest precedence to lowest)
+### Operators
 
-| Category                  | Operators               |
-|---------------------------|-------------------------|
-| factorial                 | `!`                     |
-| exponentiation            | `^`, `**`               |
-| implicit multiplication   | whitespace              |
-| modulo                    | `%`                     |
-| multiplication / division | `*`, `·`, `×`, `/`, `÷` |
-| addition / subtraction    | `+`, `-`                |
+| Operators                   | Description    |
+|-----------------------------|----------------|
+| `+`                         | addition       |
+| `-`                         | subtraction    |
+| `*`, `·`, `×`, *whitespace* | multiplication |
+| `/`, `÷`                    | division       |
+| `%`                         | modulo         |
+| `^`, `**`                   | exponentiation |
+| `!`                         | factorial      |
+
+Precedence and associativity (from highest precedence to lowest):
+
+| Category       | Operators                    | Associativity |
+|----------------|------------------------------|---------------|
+| factorial      | `!`                          | left          |
+| exponentiation | `^`, `**`                    | right         |
+| multiplication | *whitespace*                 | left          |
+| multiplication | `*`, `·`, `×`, `/`, `÷`, `%` | left          |
+| addition       | `+`, `-`                     | left          |
+
+### Built-in functions
+
+`abs`, `acos`, `acosh`, `asin`, `asinh`, `atan`, `atanh`, `ceil`, `cos`, `cosh`, `exp`, `floor`, `fract`, `gamma`, `ln`, `log`, `log10`, `log2`, `rand`, `round`, `sin`, `sinh`, `sqrt`, `tan`, `tanh`, `trunc`
 
 ### Commands
 
@@ -42,44 +57,24 @@ cargo install --path .
 
 ### Variable assignment
 
-There are two types of assignments.
-
-- __Immediate Assignment__ (`:=`) : values are evaluated at declaration time
-
-```text
-> mass := 5; velocity := 3
-> energy := mass * velocity^2 / 2
- = (5 × (3 ^ 2)) / 2 = 22.5
-
-> mass := 3
-> energy
+```
+> mass = 5; velocity = 3
+> energy = mass * velocity^2 / 2
  = 22.5
 ```
 
-- __Lazy Assignment__ (`=`) : values are evaluated when they are used
+### Function definition
 
-```text
-> mass = 5; velocity = 3
-> energy = mass * velocity^2 / 2
- = (5 × (3 ^ 2)) / 2 = 22.5
-
-> mass = 3
-> energy
- = (mass × (velocity ^ 2)) / 2 = ... = 13.5
+```
+> binomial(n, k) = n! / k! / (n-k)!
+> binomial(5, 3)
+ = 10
 ```
 
-Undefined variables are left unevaluated:
+### Math and special constants
 
-```text
-> f = 5x + 1
- = (5 × x) + 1
-> f + 3
- = ((5 × x) + 1) + 3
-
-> x = 2
-> f + 3
- = ((5 × x) + 1) + 3 = ... = 14
-```
+- `π` (`pi`) and `e`
+- `ans` and `_` store the last result.
 
 ## Development
 
