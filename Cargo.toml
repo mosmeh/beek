@@ -16,6 +16,7 @@ thiserror = "1.0.20"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 anyhow = "1.0.32"
 atty = "0.2.14"
+dirs = "3.0.1"
 rustyline = "6.2.0"
 rustyline-derive = "0.3.1"
 structopt = "0.3.16"

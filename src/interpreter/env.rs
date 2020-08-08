@@ -32,6 +32,7 @@ impl Field {
 pub enum Function {
     NullaryBuiltin(fn() -> f64),
     UnaryBuiltin(fn(f64) -> f64),
+    BinaryBuiltin(fn(f64, f64) -> f64),
     UserDefined {
         arg_names: Vec<Identifier>,
         expr: Expression,
@@ -39,10 +40,16 @@ pub enum Function {
 }
 
 impl Function {
-    fn is_builtin(&self) -> bool {
+    pub fn is_builtin(&self) -> bool {
+        !matches!(self, Self::UserDefined { .. })
+    }
+
+    pub fn num_args(&self) -> usize {
         match self {
-            Self::NullaryBuiltin(_) | Self::UnaryBuiltin(_) => true,
-            Self::UserDefined { .. } => false,
+            Self::NullaryBuiltin(_) => 0,
+            Self::UnaryBuiltin(_) => 1,
+            Self::BinaryBuiltin(_) => 2,
+            Self::UserDefined { arg_names, .. } => arg_names.len(),
         }
     }
 }
@@ -104,7 +111,12 @@ static ref DEFAULT_ENV: Environment = {
         ("asinh", f64::asinh),
         ("acosh", f64::acosh),
         ("atanh", f64::atanh),
+        ("degrees", f64::to_degrees),
+        ("radians", f64::to_radians),
+        ("erf", statrs::function::erf::erf),
+        ("erfc", statrs::function::erf::erfc),
         ("gamma", statrs::function::gamma::gamma),
+        ("lgamma", statrs::function::gamma::ln_gamma),
     ];
 
     let unary_funcs = UNARY_FUNCS.iter().map(|(name, ptr)| {
@@ -114,7 +126,24 @@ static ref DEFAULT_ENV: Environment = {
         )
     });
 
-    Environment(values.chain(nullary_funcs).chain(unary_funcs).collect())
+    type BinaryFunc = (&'static str, fn(f64, f64) -> f64);
+    static BINARY_FUNCS: &[BinaryFunc] =
+        &[("atan2", f64::atan2), ("max", f64::max), ("min", f64::min)];
+
+    let binary_funcs = BINARY_FUNCS.iter().map(|(name, ptr)| {
+        (
+            Identifier(name.to_string()),
+            NamedItem::Function(Function::BinaryBuiltin(*ptr)),
+        )
+    });
+
+    Environment(
+        values
+            .chain(nullary_funcs)
+            .chain(unary_funcs)
+            .chain(binary_funcs)
+            .collect(),
+    )
 };
 }
 
@@ -199,8 +228,6 @@ impl Environment {
         arg_names: &'a [Identifier],
         expr: &Expression,
     ) -> Result<(), EvalError> {
-        // TODO: avoid infinite recursion
-
         let find_dup = |xs: &'a [Identifier]| -> Option<&'a Identifier> {
             let mut uniq = HashSet::new();
             for x in xs.iter() {

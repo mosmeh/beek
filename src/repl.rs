@@ -51,6 +51,10 @@ impl Repl {
         Default::default()
     }
 
+    pub fn with_env(env: Environment) -> Self {
+        Self { env }
+    }
+
     pub fn run(&mut self, input: &str) -> Response {
         if let Some(cmd) = parse_command(input) {
             return self.exec_command(cmd);
@@ -62,6 +66,10 @@ impl Repl {
                 return Response::Message(e.to_string().trim().red().to_string());
             }
         };
+
+        if stmts.is_empty() {
+            return Response::Empty;
+        }
 
         let mut msg_lines = Vec::new();
         for stmt in stmts {

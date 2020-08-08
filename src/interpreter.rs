@@ -62,11 +62,11 @@ fn eval_expr(expr: &Expression, env: &Environment) -> EvalResult<Number> {
         }
         Expression::UnaryOp(op, x) => {
             let x = eval_expr(x, env)?;
-            Ok(op.apply(x)?)
+            op.apply(x)
         }
         Expression::BinaryOp(op, a, b) => {
             let (a, b) = (eval_expr(a, env)?, eval_expr(b, env)?);
-            Ok(op.apply(a, b)?)
+            op.apply(a, b)
         }
     }
 }
@@ -96,11 +96,14 @@ fn eval_func(
     let value = match func {
         Function::NullaryBuiltin(ptr) => Number(ptr()),
         Function::UnaryBuiltin(ptr) => Number(ptr(args[0].0)),
+        Function::BinaryBuiltin(ptr) => Number(ptr(args[0].0, args[1].0)),
         Function::UserDefined { arg_names, expr } => {
             let mut env = env.clone();
+            env.delete(name).unwrap(); // avoid infinite recursion
             for (name, value) in arg_names.iter().zip(args.iter()) {
                 env.def_const(name, *value)?;
             }
+
             eval_expr(&expr, &env)?
         }
     };
@@ -143,16 +146,6 @@ impl BinaryOp {
             Ok(Number(value))
         } else {
             Err(EvalError::NumericalError)
-        }
-    }
-}
-
-impl Function {
-    fn num_args(&self) -> usize {
-        match self {
-            Self::NullaryBuiltin(_) => 0,
-            Self::UnaryBuiltin(_) => 1,
-            Self::UserDefined { arg_names, .. } => arg_names.len(),
         }
     }
 }

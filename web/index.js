@@ -10,7 +10,7 @@ import 'jquery.terminal/css/jquery.terminal.min.css';
 import './style.css';
 
 function setColorscheme() {
-    // HACK: There is no official way to set colorschemes, so we resort to overwrite it
+    // HACK: There is no official way to set colorschemes, so we resort to overwriting it
     // $.terminal.ansi_colors is in unix_formatting.js
 
     $.terminal.ansi_colors.normal = {
