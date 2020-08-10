@@ -30,7 +30,7 @@ cargo install --path .
 | `^`, `**`                   | exponentiation |
 | `!`                         | factorial      |
 
-Precedence and associativity (from highest precedence to lowest):
+Precedence and associativity (ordered from highest precedence to lowest):
 
 | Category       | Operators                    | Associativity |
 |----------------|------------------------------|---------------|
@@ -46,14 +46,14 @@ Precedence and associativity (from highest precedence to lowest):
 
 ### Commands
 
-| Command                          | Description           |
-|----------------------------------|-----------------------|
-| `help`, `?`                      | show help             |
-| `list`, `ls`, `ll`, `dir`        | list variables        |
-| `delete`, `del`, `rm` *variable* | delete variable       |
-| `reset`                          | reset environment     |
-| `clear`                          | clear screen          |
-| `quit`, `exit`                   | quit                  |
+| Command                                     | Description                  |
+|---------------------------------------------|------------------------------|
+| `help`, `?`                                 | show help                    |
+| `list`, `ls`, `ll`, `dir`                   | list variables and constants |
+| `delete`, `del`, `rm` *variable*/*function* | delete variable or function  |
+| `reset`                                     | reset environment            |
+| `clear`, `cls`                              | clear screen                 |
+| `quit`, `exit`                              | quit                         |
 
 ### Variable assignment
 
@@ -74,11 +74,11 @@ Precedence and associativity (from highest precedence to lowest):
 ### Math and special constants
 
 - `π` (`pi`) and `e`
-- `ans` and `_` store the last result.
+- `ans` and `_` store the last result
 
 ## Development
 
-beek's web version is made with WebAssembly. The following commands will build the Rust codes, convert them to WebAssembly, and opens the web version in the browser.
+`beek`'s web version is made with WebAssembly. The following commands will build the Rust codes, convert them to WebAssembly, and opens the web version in the browser.
 
 ```sh
 npm install

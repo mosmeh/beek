@@ -1,9 +1,8 @@
 use crate::repl;
 use wasm_bindgen::prelude::*;
 
-// HACK:
-// Returning String or Vec<String> results in "exported global cannot be mutable" error
-// so we substitute them with JsValue
+// HACK: returning String or Vec results in "exported global cannot be mutable" error
+// so we substitute them with JsValue containing strings
 
 #[wasm_bindgen(start)]
 pub fn main() {
