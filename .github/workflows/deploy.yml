@@ -1,0 +1,24 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        targets: wasm32-unknown-unknown
+    - run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+    - run: npm install
+    - run: npm run build
+    - uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
+        enable_jekyll: false
+        force_orphan: true

@@ -3,7 +3,7 @@ name: build
 on: [push, pull_request]
 
 jobs:
-  build:
+  cli:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -26,7 +26,7 @@ jobs:
     - run: cargo fmt --all -- --check
     - run: cargo clippy -- -D warnings
 
-  build-web-version:
+  web-version:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
