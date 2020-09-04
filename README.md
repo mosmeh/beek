@@ -46,14 +46,14 @@ Precedence and associativity (ordered from highest precedence to lowest):
 
 ### Commands
 
-| Command                                     | Description                  |
-|---------------------------------------------|------------------------------|
-| `help`, `?`                                 | show help                    |
-| `list`, `ls`, `ll`, `dir`                   | list variables and constants |
-| `delete`, `del`, `rm` *variable*/*function* | delete variable or function  |
-| `reset`                                     | reset environment            |
-| `clear`, `cls`                              | clear screen                 |
-| `quit`, `exit`                              | quit                         |
+| Command                                     | Description                                          |
+|---------------------------------------------|------------------------------------------------------|
+| `help`, `?`                                 | show help                                            |
+| `list`, `ls`, `ll`, `dir`                   | list constants, variables and user-defined functions |
+| `delete`, `del`, `rm` *variable*/*function* | delete variable or function                          |
+| `reset`                                     | reset environment                                    |
+| `clear`, `cls`                              | clear screen                                         |
+| `quit`, `exit`                              | quit                                                 |
 
 ### Variable assignment
 

@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
-use beek::interpreter::env::Environment;
-use beek::interpreter::{exec_stmt, EvalError};
-use beek::language::{parse, Number};
-use beek::repl::{Repl, Response};
+use libbeek::interpreter::env::Environment;
+use libbeek::interpreter::{exec_stmt, EvalError};
+use libbeek::language::{parse, Number};
+use libbeek::repl::{Repl, Response};
 use rustyline::completion::Completer;
 use rustyline::error::ReadlineError;
 use rustyline::{Context, Editor};

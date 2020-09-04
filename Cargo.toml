@@ -27,10 +27,11 @@ getrandom = { version = "0.1.14", features = ["wasm-bindgen"] }
 wasm-bindgen = "0.2.67"
 
 [lib]
+name = "libbeek"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "beek-bin"
+name = "beek"
 path = "src/main.rs"
 doc = false
 
