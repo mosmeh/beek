@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 colored = "2.0.0"
-combine = "4.2.1"
+combine = "4.3.1"
 itertools = "0.9.0"
 lazy_static = "1.4.0"
 rand = "0.7.3"
@@ -19,7 +19,7 @@ atty = "0.2.14"
 dirs = "3.0.1"
 rustyline = "6.2.0"
 rustyline-derive = "0.3.1"
-structopt = "0.3.16"
+structopt = "0.3.17"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
