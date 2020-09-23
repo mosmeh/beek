@@ -123,10 +123,8 @@ impl Repl {
                 Response::Message(format!(
                     r#"Constants:
 {}
-
 Variables:
 {}
-
 User-defined functions:
 {}"#,
                     msg_consts, msg_vars, msg_funcs
@@ -185,9 +183,9 @@ fn format_fields<'a>(iter: impl Iterator<Item = (&'a Identifier, &'a Number)>) -
     .into_iter()
     .map(|(value, fields)| {
         let names = fields.map(|(name, _)| name).join(" = ");
-        format!("{} = {}", names, value)
+        format!("{} = {}\n", names, value)
     })
     .sorted()
     .collect::<Vec<_>>()
-    .join("\n")
+    .concat()
 }
