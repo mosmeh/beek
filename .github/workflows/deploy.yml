@@ -21,4 +21,5 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./public
         enable_jekyll: false
+        commit_message: ${{ github.event.head_commit.message }}
         force_orphan: true
