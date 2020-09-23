@@ -15,7 +15,10 @@ impl From<f64> for Number {
 
 impl Display for Number {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0.to_string().cyan())
+        let mut buffer = ryu::Buffer::new();
+        let formatted = buffer.format(self.0);
+        let formatted = formatted.strip_suffix(".0").unwrap_or(formatted);
+        write!(f, "{}", formatted.cyan())
     }
 }
 
