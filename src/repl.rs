@@ -3,7 +3,6 @@ use crate::interpreter::exec_stmt;
 use crate::language::{parse, Identifier, Number};
 use colored::Colorize;
 use itertools::Itertools;
-use std::fmt::{self, Display};
 
 static COMMANDS: &[&str] = &[
     "help", "?", "list", "ls", "ll", "dir", "delete", "del", "rm", "reset", "clear", "cls", "quit",
@@ -14,23 +13,10 @@ static COMMANDS: &[&str] = &[
 enum Command {
     Help,
     List,
-    Delete(Identifier),
+    Delete(Vec<Identifier>),
     Reset,
     Clear,
     Quit,
-}
-
-impl Display for Command {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
-        match self {
-            Self::Help => write!(f, "help"),
-            Self::List => write!(f, "list"),
-            Self::Delete(var) => write!(f, "delete {}", var),
-            Self::Reset => write!(f, "reset"),
-            Self::Clear => write!(f, "clear"),
-            Self::Quit => write!(f, "quit"),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -146,10 +132,18 @@ User-defined functions:
                     msg_consts, msg_vars, msg_funcs
                 ))
             }
-            Command::Delete(var) => match self.env.delete(&var) {
-                Ok(_) => Response::Empty,
-                Err(e) => Response::Message(e.to_string().red().to_string()),
-            },
+            Command::Delete(idents) => {
+                let errors: Vec<_> = idents
+                    .into_iter()
+                    .filter_map(|ident| self.env.delete(&ident).err())
+                    .map(|err| err.to_string())
+                    .collect();
+                if errors.is_empty() {
+                    Response::Empty
+                } else {
+                    Response::Message(errors.join("\n").red().to_string())
+                }
+            }
             Command::Reset => {
                 self.env = Environment::new();
                 Response::Empty
@@ -163,17 +157,16 @@ User-defined functions:
 fn parse_command(input: &str) -> Option<Command> {
     // TODO: support multi line input
 
-    let mut token = input.trim().split('\n').next()?.trim().split_whitespace();
-    let cmd = token.next()?.to_ascii_lowercase();
-    let arg = token.next();
+    let mut tokens = input.trim().split('\n').next()?.trim().split_whitespace();
+    let cmd = tokens.next()?.to_ascii_lowercase();
 
     match &cmd[..] {
         "help" | "?" => Some(Command::Help),
         "list" | "ls" | "ll" | "dir" => Some(Command::List),
-        "delete" | "del" | "rm" => arg.map(|ident| {
-            let var = Identifier(ident.to_string());
-            Command::Delete(var)
-        }),
+        "delete" | "del" | "rm" => {
+            let idents: Vec<_> = tokens.map(|ident| Identifier(ident.to_string())).collect();
+            Some(Command::Delete(idents))
+        }
         "reset" => Some(Command::Reset),
         "clear" | "cls" => Some(Command::Clear),
         "quit" | "exit" => Some(Command::Quit),
