@@ -2,7 +2,7 @@ mod parser;
 pub use parser::parse;
 
 use colored::Colorize;
-use std::fmt::{self, Display};
+use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Number(pub f64);
@@ -13,8 +13,8 @@ impl From<f64> for Number {
     }
 }
 
-impl Display for Number {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for Number {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut buffer = ryu::Buffer::new();
         let formatted = buffer.format(self.0);
         let formatted = formatted.strip_suffix(".0").unwrap_or(formatted);
@@ -25,21 +25,21 @@ impl Display for Number {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Identifier(pub String);
 
-impl Display for Identifier {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.to_string().yellow())
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Expression(Expression),
     VariableAssignment(VariableAssignment),
     FunctionDefinition(FunctionDefinition),
 }
 
-impl Display for Statement {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Expression(expr) => write!(f, "{}", expr),
             Self::VariableAssignment(assign) => write!(f, "{}", assign),
@@ -48,14 +48,14 @@ impl Display for Statement {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum UnaryOp {
     Negate,
     Factorial,
 }
 
-impl Display for UnaryOp {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for UnaryOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Negate => "-",
             Self::Factorial => "!",
@@ -63,7 +63,7 @@ impl Display for UnaryOp {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BinaryOp {
     Add,
     Subtract,
@@ -73,8 +73,8 @@ pub enum BinaryOp {
     Power,
 }
 
-impl Display for BinaryOp {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for BinaryOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Add => "+",
             Self::Subtract => "-",
@@ -96,20 +96,20 @@ impl BinaryOp {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Number(Number),
-    Variable(Identifier),
+    Field(Identifier),
     Function(Identifier, Vec<Expression>),
     UnaryOp(UnaryOp, Box<Expression>),
     BinaryOp(BinaryOp, Box<Expression>, Box<Expression>),
 }
 
-impl Display for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Number(x) => write!(f, "{}", x),
-            Self::Variable(x) => write!(f, "{}", x),
+            Self::Field(x) => write!(f, "{}", x),
             Self::Function(name, xs) => write!(
                 f,
                 "{}({})",
@@ -174,27 +174,27 @@ impl Display for Expression {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct VariableAssignment {
     pub name: Identifier,
     pub expr: Expression,
 }
 
-impl Display for VariableAssignment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for VariableAssignment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} = {}", self.name, self.expr)
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct FunctionDefinition {
     pub name: Identifier,
     pub arg_names: Vec<Identifier>,
     pub expr: Expression,
 }
 
-impl Display for FunctionDefinition {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for FunctionDefinition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}({}) = {}",

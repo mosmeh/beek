@@ -2,13 +2,15 @@ use super::{
     BinaryOp, Expression, FunctionDefinition, Identifier, Number, Statement, UnaryOp,
     VariableAssignment,
 };
-use combine::easy::{self, Error};
-use combine::parser::char::{alpha_num, char, crlf, digit, letter, newline, string};
-use combine::parser::combinator::recognize;
-use combine::ParseError;
 use combine::{
-    attempt, between, choice, eof, many, one_of, optional, parser, satisfy, sep_by, skip_many,
-    skip_many1, EasyParser, Parser, Stream,
+    attempt, between, choice,
+    easy::{self, Error},
+    eof, many, one_of, optional, parser,
+    parser::{
+        char::{alpha_num, char, crlf, digit, letter, newline, string},
+        combinator::recognize,
+    },
+    satisfy, sep_by, skip_many, skip_many1, EasyParser, ParseError, Parser, Stream,
 };
 use itertools::Itertools;
 
@@ -256,7 +258,7 @@ parser! {
             parens(),
             number().map(Expression::Number),
             attempt(apply_func()),
-            ident().map(Expression::Variable),
+            ident().map(Expression::Field),
         ))
     }
 }

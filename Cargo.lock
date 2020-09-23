@@ -82,7 +82,6 @@ dependencies = [
  "dirs",
  "getrandom",
  "itertools",
- "lazy_static",
  "rand",
  "rustyline",
  "rustyline-derive",

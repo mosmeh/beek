@@ -1,16 +1,12 @@
 use anyhow::{anyhow, Result};
-use libbeek::interpreter::env::Environment;
-use libbeek::interpreter::{exec_stmt, EvalError};
-use libbeek::language::{parse, Number};
-use libbeek::repl::{Repl, Response};
-use rustyline::completion::Completer;
-use rustyline::error::ReadlineError;
-use rustyline::{Context, Editor};
+use libbeek::{
+    interpreter::{self, env::Environment, EvalError},
+    language::{self, Number},
+    repl::{Repl, Response},
+};
+use rustyline::{completion::Completer, error::ReadlineError, Context, Editor};
 use rustyline_derive::{Helper, Highlighter, Hinter, Validator};
-use std::cell::RefCell;
-use std::io::BufRead;
-use std::path::PathBuf;
-use std::rc::Rc;
+use std::{cell::RefCell, io::BufRead, path::PathBuf, rc::Rc};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -74,12 +70,12 @@ fn main() -> Result<()> {
 }
 
 fn run_script(script: &str, env: &mut Environment) -> Result<Option<Number>> {
-    let stmts = parse(script).map_err(|err| anyhow!(err.to_string()))?;
+    let stmts = language::parse(script).map_err(|err| anyhow!(err.to_string()))?;
 
     stmts
         .iter()
         .try_fold(None, |last, stmt| {
-            let value = exec_stmt(&stmt, env)?;
+            let value = interpreter::exec_stmt(&stmt, env)?;
             Ok(value.or(last))
         })
         .map_err(|err: EvalError| anyhow!(err))

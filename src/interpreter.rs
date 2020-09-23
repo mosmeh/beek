@@ -11,12 +11,25 @@ use thiserror::Error;
 pub enum EvalError {
     #[error("Non-finite result: {0}")]
     NumericalError(Number),
+
     #[error("{0}")]
     TypeError(String),
+
     #[error("Unknown identifier '{0}'")]
     ReferenceError(Identifier),
+
+    #[error("The function '{name}' takes {expected} {} but {got} {} supplied",
+            if *.expected == 1 { "argument" } else { "arguments" },
+            if *.got == 1 { "was" } else { "were" }
+        )]
+    ArityError {
+        name: String,
+        expected: usize,
+        got: usize,
+    },
+
     #[error("{0}")]
-    InvalidDefinitionError(String),
+    DefinitionError(String),
 }
 
 pub type EvalResult<T> = Result<T, EvalError>;
@@ -40,8 +53,8 @@ pub fn exec_stmt(stmt: &Statement, env: &mut Environment) -> EvalResult<Option<N
     };
 
     if let Some(value) = value {
-        for var in &["ans", "_"] {
-            env.def_const(&Identifier(var.to_string()), value)?;
+        for name in &["ans", "_"] {
+            env.def_const(&Identifier(name.to_string()), value)?;
         }
     }
 
@@ -51,7 +64,7 @@ pub fn exec_stmt(stmt: &Statement, env: &mut Environment) -> EvalResult<Option<N
 fn eval_expr(expr: &Expression, env: &Environment) -> EvalResult<Number> {
     let value = match expr {
         Expression::Number(x) => *x,
-        Expression::Variable(name) => env.resolve_var(name)?,
+        Expression::Field(name) => env.resolve_field(name)?,
         Expression::Function(name, xs) => {
             let func = env.resolve_func(name)?;
             let args = xs
@@ -83,20 +96,12 @@ fn eval_func(
     args: &[Number],
     env: &Environment,
 ) -> EvalResult<Number> {
-    let expected_num_args = func.num_args();
-    if args.len() != expected_num_args {
-        return Err(EvalError::TypeError(format!(
-            "The function '{}' takes {} {} but {} {} supplied",
-            name,
-            expected_num_args,
-            if expected_num_args == 1 {
-                "argument"
-            } else {
-                "arguments"
-            },
-            args.len(),
-            if args.len() == 1 { "was" } else { "were" }
-        )));
+    if args.len() != func.num_args() {
+        return Err(EvalError::ArityError {
+            name: name.to_string(),
+            expected: func.num_args(),
+            got: args.len(),
+        });
     }
 
     match func {

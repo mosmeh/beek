@@ -1,17 +1,19 @@
 use super::{EvalError, EvalResult};
 use crate::language::{Expression, Identifier, Number};
 use rand::Rng;
-use std::collections::{HashMap, HashSet};
-use std::fmt::{self, Display};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+};
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone)]
 pub enum Field {
     Variable(Number),
     Constant(Number),
 }
 
-impl Display for Field {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for Field {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Variable(x) => write!(f, "{}", x),
             Self::Constant(x) => write!(f, "{}", x),
@@ -28,7 +30,7 @@ impl Field {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone)]
 pub enum Function {
     NullaryBuiltin(fn() -> f64),
     UnaryBuiltin(fn(f64) -> f64),
@@ -54,7 +56,7 @@ impl Function {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone)]
 pub enum NamedItem {
     Field(Field),
     Function(Function),
@@ -63,102 +65,12 @@ pub enum NamedItem {
 #[derive(Debug, Clone)]
 pub struct Environment(HashMap<Identifier, NamedItem>);
 
-lazy_static::lazy_static! {
-static ref DEFAULT_ENV: Environment = {
-    use std::f64::consts::*;
-    let values = vec![("pi", PI), ("π", PI), ("e", E)]
-        .into_iter()
-        .map(|(name, value)| {
-            (
-                Identifier(name.to_string()),
-                NamedItem::Field(Field::Constant(Number(value))),
-            )
-        });
-
-    type NullaryFunc = (&'static str, fn() -> f64);
-    static NULLARY_FUNCS: &[NullaryFunc] = &[("rand", || rand::thread_rng().gen())];
-
-    let nullary_funcs = NULLARY_FUNCS.iter().map(|(name, ptr)| {
-        (
-            Identifier(name.to_string()),
-            NamedItem::Function(Function::NullaryBuiltin(*ptr)),
-        )
-    });
-
-    type UnaryFunc = (&'static str, fn(f64) -> f64);
-    static UNARY_FUNCS: &[UnaryFunc] = &[
-        ("floor", f64::floor),
-        ("ceil", f64::ceil),
-        ("round", f64::round),
-        ("trunc", f64::trunc),
-        ("fract", f64::fract),
-        ("abs", f64::abs),
-        ("sqrt", f64::sqrt),
-        ("exp", f64::exp),
-        ("log", f64::ln),
-        ("ln", f64::ln),
-        ("log2", f64::log2),
-        ("log10", f64::log10),
-        ("sin", f64::sin),
-        ("cos", f64::cos),
-        ("tan", f64::tan),
-        ("asin", f64::asin),
-        ("acos", f64::acos),
-        ("atan", f64::atan),
-        ("sinh", f64::sinh),
-        ("cosh", f64::cosh),
-        ("tanh", f64::tanh),
-        ("asinh", f64::asinh),
-        ("acosh", f64::acosh),
-        ("atanh", f64::atanh),
-        ("degrees", f64::to_degrees),
-        ("radians", f64::to_radians),
-        ("erf", statrs::function::erf::erf),
-        ("erfc", statrs::function::erf::erfc),
-        ("gamma", statrs::function::gamma::gamma),
-        ("lgamma", statrs::function::gamma::ln_gamma),
-    ];
-
-    let unary_funcs = UNARY_FUNCS.iter().map(|(name, ptr)| {
-        (
-            Identifier(name.to_string()),
-            NamedItem::Function(Function::UnaryBuiltin(*ptr)),
-        )
-    });
-
-    type BinaryFunc = (&'static str, fn(f64, f64) -> f64);
-    static BINARY_FUNCS: &[BinaryFunc] =
-        &[("atan2", f64::atan2), ("max", f64::max), ("min", f64::min)];
-
-    let binary_funcs = BINARY_FUNCS.iter().map(|(name, ptr)| {
-        (
-            Identifier(name.to_string()),
-            NamedItem::Function(Function::BinaryBuiltin(*ptr)),
-        )
-    });
-
-    Environment(
-        values
-            .chain(nullary_funcs)
-            .chain(unary_funcs)
-            .chain(binary_funcs)
-            .collect(),
-    )
-};
-}
-
-impl Default for Environment {
-    fn default() -> Self {
-        DEFAULT_ENV.clone()
-    }
-}
-
 impl Environment {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn resolve_var(&self, ident: &Identifier) -> EvalResult<Number> {
+    pub fn resolve_field(&self, ident: &Identifier) -> EvalResult<Number> {
         match self.0.get(ident) {
             Some(NamedItem::Field(field)) => Ok(field.clone().inner()),
             Some(NamedItem::Function(_)) => {
@@ -178,7 +90,7 @@ impl Environment {
         }
     }
 
-    pub fn delete(&mut self, ident: &Identifier) -> Result<(), EvalError> {
+    pub fn delete(&mut self, ident: &Identifier) -> EvalResult<()> {
         match self.0.get(ident) {
             Some(NamedItem::Field(Field::Constant(_))) => Err(EvalError::TypeError(format!(
                 "Cannot delete a constant '{}'",
@@ -199,8 +111,8 @@ impl Environment {
         self.0.iter()
     }
 
-    pub fn assign_var(&mut self, name: &Identifier, value: Number) -> Result<(), EvalError> {
-        match self.0.get_mut(name) {
+    pub fn assign_var(&mut self, name: &Identifier, value: Number) -> EvalResult<()> {
+        match self.0.get(name) {
             Some(NamedItem::Field(Field::Constant(_))) => Err(EvalError::TypeError(format!(
                 "Cannot assign to a constant '{}'",
                 name
@@ -216,36 +128,26 @@ impl Environment {
         }
     }
 
-    pub fn def_const(&mut self, name: &Identifier, value: Number) -> Result<(), EvalError> {
+    pub fn def_const(&mut self, name: &Identifier, value: Number) -> EvalResult<()> {
         self.0
             .insert(name.clone(), NamedItem::Field(Field::Constant(value)));
         Ok(())
     }
 
-    pub fn def_func<'a>(
+    pub fn def_func(
         &mut self,
         name: &Identifier,
-        arg_names: &'a [Identifier],
+        arg_names: &[Identifier],
         expr: &Expression,
-    ) -> Result<(), EvalError> {
-        let find_dup = |xs: &'a [Identifier]| -> Option<&'a Identifier> {
-            let mut uniq = HashSet::new();
-            for x in xs.iter() {
-                if !uniq.insert(x) {
-                    return Some(x);
-                }
-            }
-            None
-        };
-
-        if let Some(dup) = find_dup(&arg_names) {
-            return Err(EvalError::InvalidDefinitionError(format!(
+    ) -> EvalResult<()> {
+        if let Some(dup) = find_duplicate(&arg_names) {
+            return Err(EvalError::DefinitionError(format!(
                 "Duplicate argument '{}'",
                 dup
             )));
         }
 
-        match self.0.get_mut(name) {
+        match self.0.get(name) {
             Some(NamedItem::Field(Field::Constant(_))) => Err(EvalError::TypeError(format!(
                 "Cannot assign to a constant '{}'",
                 name
@@ -264,5 +166,94 @@ impl Environment {
                 Ok(())
             }
         }
+    }
+}
+
+fn find_duplicate(xs: &[Identifier]) -> Option<&Identifier> {
+    let mut uniq = HashSet::new();
+    for x in xs.iter() {
+        if !uniq.insert(x) {
+            return Some(x);
+        }
+    }
+    None
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        use std::f64::consts::*;
+
+        type NullaryFunc = (&'static str, fn() -> f64);
+        type UnaryFunc = (&'static str, fn(f64) -> f64);
+        type BinaryFunc = (&'static str, fn(f64, f64) -> f64);
+
+        const CONSTS: &[(&str, f64)] = &[("pi", PI), ("π", PI), ("e", E)];
+        const NULLARY_FUNCS: &[NullaryFunc] = &[("rand", || rand::thread_rng().gen())];
+        const UNARY_FUNCS: &[UnaryFunc] = &[
+            ("floor", f64::floor),
+            ("ceil", f64::ceil),
+            ("round", f64::round),
+            ("trunc", f64::trunc),
+            ("fract", f64::fract),
+            ("abs", f64::abs),
+            ("sqrt", f64::sqrt),
+            ("exp", f64::exp),
+            ("log", f64::ln),
+            ("ln", f64::ln),
+            ("log2", f64::log2),
+            ("log10", f64::log10),
+            ("sin", f64::sin),
+            ("cos", f64::cos),
+            ("tan", f64::tan),
+            ("asin", f64::asin),
+            ("acos", f64::acos),
+            ("atan", f64::atan),
+            ("sinh", f64::sinh),
+            ("cosh", f64::cosh),
+            ("tanh", f64::tanh),
+            ("asinh", f64::asinh),
+            ("acosh", f64::acosh),
+            ("atanh", f64::atanh),
+            ("degrees", f64::to_degrees),
+            ("radians", f64::to_radians),
+            ("erf", statrs::function::erf::erf),
+            ("erfc", statrs::function::erf::erfc),
+            ("gamma", statrs::function::gamma::gamma),
+            ("lgamma", statrs::function::gamma::ln_gamma),
+        ];
+        const BINARY_FUNCS: &[BinaryFunc] =
+            &[("atan2", f64::atan2), ("max", f64::max), ("min", f64::min)];
+
+        let consts = CONSTS.iter().map(|(name, value)| {
+            (
+                Identifier(name.to_string()),
+                NamedItem::Field(Field::Constant(Number(*value))),
+            )
+        });
+        let nullary_funcs = NULLARY_FUNCS.iter().map(|(name, ptr)| {
+            (
+                Identifier(name.to_string()),
+                NamedItem::Function(Function::NullaryBuiltin(*ptr)),
+            )
+        });
+        let unary_funcs = UNARY_FUNCS.iter().map(|(name, ptr)| {
+            (
+                Identifier(name.to_string()),
+                NamedItem::Function(Function::UnaryBuiltin(*ptr)),
+            )
+        });
+        let binary_funcs = BINARY_FUNCS.iter().map(|(name, ptr)| {
+            (
+                Identifier(name.to_string()),
+                NamedItem::Function(Function::BinaryBuiltin(*ptr)),
+            )
+        });
+        Environment(
+            consts
+                .chain(nullary_funcs)
+                .chain(unary_funcs)
+                .chain(binary_funcs)
+                .collect(),
+        )
     }
 }
