@@ -9,8 +9,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum EvalError {
-    #[error("Encountered infinity or NaN")]
-    NumericalError,
+    #[error("Non-finite result: {0}")]
+    NumericalError(Number),
     #[error("{0}")]
     TypeError(String),
     #[error("Unknown identifier '{0}'")]
@@ -19,7 +19,7 @@ pub enum EvalError {
     InvalidDefinitionError(String),
 }
 
-pub type EvalResult<T> = std::result::Result<T, EvalError>;
+pub type EvalResult<T> = Result<T, EvalError>;
 
 pub fn exec_stmt(stmt: &Statement, env: &mut Environment) -> EvalResult<Option<Number>> {
     let value = match stmt {
@@ -49,25 +49,31 @@ pub fn exec_stmt(stmt: &Statement, env: &mut Environment) -> EvalResult<Option<N
 }
 
 fn eval_expr(expr: &Expression, env: &Environment) -> EvalResult<Number> {
-    match expr {
-        Expression::Number(x) => Ok(*x),
-        Expression::Variable(name) => env.resolve_var(name),
+    let value = match expr {
+        Expression::Number(x) => *x,
+        Expression::Variable(name) => env.resolve_var(name)?,
         Expression::Function(name, xs) => {
             let func = env.resolve_func(name)?;
             let args = xs
                 .iter()
                 .map(|x| eval_expr(x, env))
                 .collect::<EvalResult<Vec<Number>>>()?;
-            eval_func(name, func, &args, env)
+            eval_func(name, func, &args, env)?
         }
         Expression::UnaryOp(op, x) => {
             let x = eval_expr(x, env)?;
-            op.apply(x)
+            op.apply(x)?
         }
         Expression::BinaryOp(op, a, b) => {
             let (a, b) = (eval_expr(a, env)?, eval_expr(b, env)?);
-            op.apply(a, b)
+            op.apply(a, b)?
         }
+    };
+
+    if value.0.is_finite() {
+        Ok(value)
+    } else {
+        Err(EvalError::NumericalError(value))
     }
 }
 
@@ -93,10 +99,10 @@ fn eval_func(
         )));
     }
 
-    let value = match func {
-        Function::NullaryBuiltin(ptr) => Number(ptr()),
-        Function::UnaryBuiltin(ptr) => Number(ptr(args[0].0)),
-        Function::BinaryBuiltin(ptr) => Number(ptr(args[0].0, args[1].0)),
+    match func {
+        Function::NullaryBuiltin(ptr) => Ok(Number(ptr())),
+        Function::UnaryBuiltin(ptr) => Ok(Number(ptr(args[0].0))),
+        Function::BinaryBuiltin(ptr) => Ok(Number(ptr(args[0].0, args[1].0))),
         Function::UserDefined { arg_names, expr } => {
             let mut env = env.clone();
             env.delete(name).unwrap(); // avoid infinite recursion
@@ -104,14 +110,8 @@ fn eval_func(
                 env.def_const(name, *value)?;
             }
 
-            eval_expr(&expr, &env)?
+            eval_expr(&expr, &env)
         }
-    };
-
-    if value.0.is_finite() {
-        Ok(value)
-    } else {
-        Err(EvalError::NumericalError)
     }
 }
 
@@ -121,12 +121,7 @@ impl UnaryOp {
             Self::Negate => -x.0,
             Self::Factorial => factorial(x.0),
         };
-
-        if value.is_finite() {
-            Ok(Number(value))
-        } else {
-            Err(EvalError::NumericalError)
-        }
+        Ok(Number(value))
     }
 }
 
@@ -141,12 +136,7 @@ impl BinaryOp {
             Self::Modulo => a % b,
             Self::Power => a.powf(b),
         };
-
-        if value.is_finite() {
-            Ok(Number(value))
-        } else {
-            Err(EvalError::NumericalError)
-        }
+        Ok(Number(value))
     }
 }
 
