@@ -16,16 +16,22 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(author = env!("CARGO_PKG_AUTHORS"))]
 struct Opt {
-    /// Executes script passed in as string
+    /// Execute script passed in as string
     script: Option<String>,
 
     /// File(s) containing scripts
     #[structopt(short, long, conflicts_with = "script")]
     file: Vec<PathBuf>,
+
+    /// Enter REPL after running scripts
+    #[structopt(short, long)]
+    interactive: bool,
 }
 
 fn main() -> Result<()> {
     let opt = Opt::from_args();
+
+    let mut env = Environment::new();
 
     let script_given = opt.script.is_some();
     let files_given = !opt.file.is_empty();
@@ -33,8 +39,6 @@ fn main() -> Result<()> {
 
     if script_given || files_given || stdin_given {
         colored::control::set_override(false);
-
-        let mut env = Environment::new();
 
         let last_result = if script_given {
             run_script(&opt.script.unwrap(), &mut env)
@@ -60,10 +64,13 @@ fn main() -> Result<()> {
             println!("{}", last_result);
         }
 
-        return Ok(());
+        if !opt.interactive {
+            return Ok(());
+        }
     }
 
-    run_repl()
+    colored::control::unset_override();
+    run_repl(env)
 }
 
 fn run_script(script: &str, env: &mut Environment) -> Result<Option<Number>> {
@@ -78,8 +85,9 @@ fn run_script(script: &str, env: &mut Environment) -> Result<Option<Number>> {
         .map_err(|err: EvalError| anyhow!(err))
 }
 
-fn run_repl() -> Result<()> {
-    let repl = Rc::new(RefCell::new(Repl::new()));
+fn run_repl(env: Environment) -> Result<()> {
+    let repl = Repl::with_env(env);
+    let repl = Rc::new(RefCell::new(repl));
 
     let mut editor = Editor::new();
     let helper = RLHelper(repl.clone());
