@@ -73,9 +73,10 @@ impl Environment {
     pub fn resolve_field(&self, ident: &Identifier) -> EvalResult<Number> {
         match self.0.get(ident) {
             Some(NamedItem::Field(field)) => Ok(field.clone().inner()),
-            Some(NamedItem::Function(_)) => {
-                Err(EvalError::TypeError(format!("{} is not a variable", ident)))
-            }
+            Some(NamedItem::Function(_)) => Err(EvalError::TypeError(format!(
+                "{} is not a variable or constant",
+                ident
+            ))),
             None => Err(EvalError::ReferenceError(ident.clone())),
         }
     }
@@ -93,11 +94,11 @@ impl Environment {
     pub fn delete(&mut self, ident: &Identifier) -> EvalResult<()> {
         match self.0.get(ident) {
             Some(NamedItem::Field(Field::Constant(_))) => Err(EvalError::TypeError(format!(
-                "Cannot delete a constant '{}'",
+                "Cannot delete a constant {}",
                 ident
             ))),
             Some(NamedItem::Function(func)) if func.is_builtin() => Err(EvalError::TypeError(
-                format!("Cannot delete a built-in function '{}'", ident),
+                format!("Cannot delete a built-in function {}", ident),
             )),
             None => Err(EvalError::ReferenceError(ident.clone())),
             _ => {
@@ -114,11 +115,11 @@ impl Environment {
     pub fn assign_var(&mut self, name: &Identifier, value: Number) -> EvalResult<()> {
         match self.0.get(name) {
             Some(NamedItem::Field(Field::Constant(_))) => Err(EvalError::TypeError(format!(
-                "Cannot assign to a constant '{}'",
+                "Cannot assign to a constant {}",
                 name
             ))),
             Some(NamedItem::Function(func)) if func.is_builtin() => Err(EvalError::TypeError(
-                format!("Cannot redefine a built-in function '{}'", name),
+                format!("Cannot redefine a built-in function {}", name),
             )),
             _ => {
                 self.0
@@ -142,18 +143,18 @@ impl Environment {
     ) -> EvalResult<()> {
         if let Some(dup) = find_duplicate(&arg_names) {
             return Err(EvalError::DefinitionError(format!(
-                "Duplicate argument '{}'",
+                "Duplicate argument {}",
                 dup
             )));
         }
 
         match self.0.get(name) {
             Some(NamedItem::Field(Field::Constant(_))) => Err(EvalError::TypeError(format!(
-                "Cannot assign to a constant '{}'",
+                "Cannot assign to a constant {}",
                 name
             ))),
             Some(NamedItem::Function(func)) if func.is_builtin() => Err(EvalError::TypeError(
-                format!("Cannot redefine a built-in function '{}'", name),
+                format!("Cannot redefine a built-in function {}", name),
             )),
             _ => {
                 self.0.insert(

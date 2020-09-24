@@ -9,16 +9,16 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum EvalError {
-    #[error("Non-finite result: {0}")]
+    #[error("Encountered non-finite value: {0}")]
     NumericalError(Number),
 
     #[error("{0}")]
     TypeError(String),
 
-    #[error("Unknown identifier '{0}'")]
+    #[error("Unknown identifier {0}")]
     ReferenceError(Identifier),
 
-    #[error("The function '{name}' takes {expected} {} but {got} {} supplied",
+    #[error("The function {name} takes {expected} {} but {got} {} supplied",
             if *.expected == 1 { "argument" } else { "arguments" },
             if *.got == 1 { "was" } else { "were" }
         )]
