@@ -89,7 +89,7 @@ enum Command {
 #[rustfmt::skip]
 static COMMANDS: &[&str] = &[
     "help", "?",
-    "list", "ls", "ll", "dir",
+    "list", "ls", "ll",
     "delete", "del", "rm",
     "reset",
     "clear", "cls",
@@ -106,7 +106,7 @@ impl std::str::FromStr for Command {
 
         match &name[..] {
             "help" | "?" => Ok(Self::Help),
-            "list" | "ls" | "ll" | "dir" => Ok(Self::List),
+            "list" | "ls" | "ll" => Ok(Self::List),
             "delete" | "del" | "rm" => {
                 let idents: Vec<_> = args.map(|ident| Identifier(ident.to_string())).collect();
                 Ok(Self::Delete(idents))

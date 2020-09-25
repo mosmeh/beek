@@ -49,7 +49,7 @@ Precedence and associativity (ordered from highest precedence to lowest):
 | Command                                         | Description                                          |
 |-------------------------------------------------|------------------------------------------------------|
 | `help`, `?`                                     | show help                                            |
-| `list`, `ls`, `ll`, `dir`                       | list constants, variables and user-defined functions |
+| `list`, `ls`, `ll`                              | list constants, variables and user-defined functions |
 | `delete`, `del`, `rm` *variable*/*function* ... | delete variable(s) or function(s)                    |
 | `reset`                                         | reset environment                                    |
 | `clear`, `cls`                                  | clear screen                                         |
