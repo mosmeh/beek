@@ -36,9 +36,9 @@ pub type EvalResult<T> = Result<T, EvalError>;
 
 pub fn exec_stmt(stmt: &Statement, env: &mut Environment) -> EvalResult<Option<Number>> {
     let value = match stmt {
-        Statement::Expression(expr) => Some(eval_expr(expr, env)?),
+        Statement::Expression(expr) => Some(eval_expr_global(expr, env)?),
         Statement::VariableAssignment(VariableAssignment { name, expr }) => {
-            let evaluated = eval_expr(expr, env)?;
+            let evaluated = eval_expr_global(expr, env)?;
             env.assign_var(name, evaluated)?;
             Some(evaluated)
         }
@@ -61,24 +61,35 @@ pub fn exec_stmt(stmt: &Statement, env: &mut Environment) -> EvalResult<Option<N
     Ok(value)
 }
 
-fn eval_expr(expr: &Expression, env: &Environment) -> EvalResult<Number> {
+fn eval_expr_global(expr: &Expression, env: &Environment) -> EvalResult<Number> {
+    eval_expr_local(expr, env, env)
+}
+
+fn eval_expr_local(
+    expr: &Expression,
+    local_env: &Environment,
+    global_env: &Environment,
+) -> EvalResult<Number> {
     let value = match expr {
         Expression::Number(x) => *x,
-        Expression::Field(name) => env.resolve_field(name)?,
+        Expression::Field(name) => local_env.resolve_field(name)?,
         Expression::Function(name, xs) => {
-            let func = env.resolve_func(name)?;
+            let func = local_env.resolve_func(name)?;
             let args = xs
                 .iter()
-                .map(|x| eval_expr(x, env))
+                .map(|x| eval_expr_local(x, local_env, global_env))
                 .collect::<EvalResult<Vec<Number>>>()?;
-            eval_func(name, func, &args, env)?
+            eval_func(name, func, &args, global_env)?
         }
         Expression::UnaryOp(op, x) => {
-            let x = eval_expr(x, env)?;
+            let x = eval_expr_local(x, local_env, global_env)?;
             op.apply(x)?
         }
         Expression::BinaryOp(op, a, b) => {
-            let (a, b) = (eval_expr(a, env)?, eval_expr(b, env)?);
+            let (a, b) = (
+                eval_expr_local(a, local_env, global_env)?,
+                eval_expr_local(b, local_env, global_env)?,
+            );
             op.apply(a, b)?
         }
     };
@@ -109,13 +120,15 @@ fn eval_func(
         Function::UnaryBuiltin(ptr) => Ok(Number(ptr(args[0].0))),
         Function::BinaryBuiltin(ptr) => Ok(Number(ptr(args[0].0, args[1].0))),
         Function::UserDefined { arg_names, expr } => {
-            let mut env = env.clone();
-            env.delete(name).unwrap(); // avoid infinite recursion
-            for (name, value) in arg_names.iter().zip(args.iter()) {
-                env.def_const(name, *value)?;
+            let mut global_env = env.clone();
+            global_env.delete(name).unwrap(); // HACK: avoid infinite recursion
+
+            let mut local_env = global_env.clone();
+            for (arg_name, value) in arg_names.iter().zip(args.iter()) {
+                local_env.def_const(arg_name, *value)?;
             }
 
-            eval_expr(&expr, &env)
+            eval_expr_local(&expr, &local_env, &global_env)
         }
     }
 }
