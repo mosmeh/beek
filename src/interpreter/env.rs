@@ -189,7 +189,7 @@ impl Default for Environment {
         type BinaryFunc = (&'static str, fn(f64, f64) -> f64);
 
         const CONSTS: &[(&str, f64)] = &[("pi", PI), ("π", PI), ("e", E)];
-        const NULLARY_FUNCS: &[NullaryFunc] = &[("rand", || rand::thread_rng().gen())];
+        const NULLARY_FUNCS: &[NullaryFunc] = &[("random", || rand::thread_rng().gen())];
         const UNARY_FUNCS: &[UnaryFunc] = &[
             ("floor", f64::floor),
             ("ceil", f64::ceil),

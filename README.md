@@ -42,7 +42,7 @@ Precedence and associativity (ordered from highest precedence to lowest):
 
 ### Built-in functions
 
-`abs`, `acos`, `acosh`, `asin`, `asinh`, `atan`, `atan2`, `atanh`, `ceil`, `cos`, `cosh`, `degrees`, `erf`, `erfc`, `exp`, `floor`, `fract`, `gamma`, `lgamma`, `ln`, `log`, `log10`, `log2`, `max`, `min`, `radians`, `rand`, `round`, `sin`, `sinh`, `sqrt`, `tan`, `tanh`, `trunc`
+`abs`, `acos`, `acosh`, `asin`, `asinh`, `atan`, `atan2`, `atanh`, `ceil`, `cos`, `cosh`, `degrees`, `erf`, `erfc`, `exp`, `floor`, `fract`, `gamma`, `lgamma`, `ln`, `log`, `log10`, `log2`, `max`, `min`, `radians`, `random`, `round`, `sin`, `sinh`, `sqrt`, `tan`, `tanh`, `trunc`
 
 ### Commands
 
