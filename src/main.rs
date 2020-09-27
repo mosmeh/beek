@@ -7,13 +7,15 @@ use libbeek::{
 use rustyline::{completion::Completer, error::ReadlineError, Context, Editor};
 use rustyline_derive::{Helper, Highlighter, Hinter, Validator};
 use std::{cell::RefCell, io::BufRead, path::PathBuf, rc::Rc};
-use structopt::StructOpt;
+use structopt::{clap::AppSettings, StructOpt};
 
 #[derive(Debug, StructOpt)]
-#[structopt(author = env!("CARGO_PKG_AUTHORS"))]
+#[structopt(author = env!("CARGO_PKG_AUTHORS"),
+            setting(AppSettings::TrailingVarArg),
+            setting(AppSettings::DontDelimitTrailingValues))]
 struct Opt {
     /// Execute script passed in as string
-    script: Option<String>,
+    script: Vec<String>,
 
     /// File(s) containing scripts
     #[structopt(short, long, conflicts_with = "script")]
@@ -29,7 +31,7 @@ fn main() -> Result<()> {
 
     let mut env = Environment::new();
 
-    let script_given = opt.script.is_some();
+    let script_given = !opt.script.is_empty();
     let files_given = !opt.file.is_empty();
     let stdin_given = atty::isnt(atty::Stream::Stdin);
 
@@ -37,7 +39,7 @@ fn main() -> Result<()> {
         colored::control::set_override(false);
 
         let last_result = if script_given {
-            run_script(&opt.script.unwrap(), &mut env)
+            run_script(&opt.script.join(" "), &mut env)
         } else if files_given {
             opt.file.iter().try_fold(None, |last, file| {
                 let script = std::fs::read_to_string(file)?;
