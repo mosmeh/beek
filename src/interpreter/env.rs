@@ -188,7 +188,7 @@ impl Default for Environment {
         type UnaryFunc = (&'static str, fn(f64) -> f64);
         type BinaryFunc = (&'static str, fn(f64, f64) -> f64);
 
-        const CONSTS: &[(&str, f64)] = &[("pi", PI), ("π", PI), ("e", E)];
+        const CONSTS: &[(&str, f64)] = &[("e", E), ("pi", PI), ("π", PI), ("tau", TAU), ("τ", TAU)];
         const NULLARY_FUNCS: &[NullaryFunc] = &[("random", random)];
         const UNARY_FUNCS: &[UnaryFunc] = &[
             ("floor", f64::floor),

@@ -73,7 +73,7 @@ Precedence and associativity (ordered from highest precedence to lowest):
 
 ### Math and special constants
 
-- `π` (`pi`) and `e`
+- `e`, `π` (`pi`) and `τ` (`tau`)
 - `ans` and `_` store the last result
 
 ## Development
