@@ -189,7 +189,7 @@ impl Default for Environment {
         type BinaryFunc = (&'static str, fn(f64, f64) -> f64);
 
         const CONSTS: &[(&str, f64)] = &[("pi", PI), ("π", PI), ("e", E)];
-        const NULLARY_FUNCS: &[NullaryFunc] = &[("random", || rand::thread_rng().gen())];
+        const NULLARY_FUNCS: &[NullaryFunc] = &[("random", random)];
         const UNARY_FUNCS: &[UnaryFunc] = &[
             ("floor", f64::floor),
             ("ceil", f64::ceil),
@@ -203,6 +203,7 @@ impl Default for Environment {
             ("ln", f64::ln),
             ("log2", f64::log2),
             ("log10", f64::log10),
+            ("cbrt", f64::cbrt),
             ("sin", f64::sin),
             ("cos", f64::cos),
             ("tan", f64::tan),
@@ -221,9 +222,15 @@ impl Default for Environment {
             ("erfc", statrs::function::erf::erfc),
             ("gamma", statrs::function::gamma::gamma),
             ("lgamma", statrs::function::gamma::ln_gamma),
+            ("sign", sign),
         ];
-        const BINARY_FUNCS: &[BinaryFunc] =
-            &[("atan2", f64::atan2), ("max", f64::max), ("min", f64::min)];
+        const BINARY_FUNCS: &[BinaryFunc] = &[
+            ("pow", f64::powf),
+            ("hypot", f64::hypot),
+            ("atan2", f64::atan2),
+            ("max", f64::max),
+            ("min", f64::min),
+        ];
 
         let consts = CONSTS.iter().map(|(name, value)| {
             (
@@ -256,5 +263,21 @@ impl Default for Environment {
                 .chain(binary_funcs)
                 .collect(),
         )
+    }
+}
+
+fn random() -> f64 {
+    rand::thread_rng().gen()
+}
+
+fn sign(x: f64) -> f64 {
+    if x == 0.0 {
+        if x.is_sign_positive() {
+            0.0
+        } else {
+            -0.0
+        }
+    } else {
+        x.signum()
     }
 }
