@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use libbeek::{
-    interpreter::{self, env::Environment, EvalError},
+    interpreter::{self, env::Environment},
     language::{self, Number},
     repl::{Repl, Response},
 };
@@ -41,18 +41,21 @@ fn main() -> Result<()> {
         let last_result = if script_given {
             run_script(&opt.script.join(" "), &mut env)
         } else if files_given {
-            opt.file.iter().try_fold(None, |last, file| {
+            opt.file.iter().try_fold(None, |_, file| {
                 let script = std::fs::read_to_string(file)?;
-                let value = run_script(&script, &mut env)?;
-                Ok(value.or(last))
+                run_script(&script, &mut env)
             })
         } else if stdin_given {
             std::io::stdin()
                 .lock()
                 .lines()
                 .try_fold(None, |last, line| {
-                    let value = run_script(&line?, &mut env)?;
-                    Ok(value.or(last))
+                    let line = line?;
+                    if line.trim().is_empty() {
+                        Ok(last)
+                    } else {
+                        run_script(&line, &mut env)
+                    }
                 })
         } else {
             unreachable!()
@@ -76,11 +79,8 @@ fn run_script(script: &str, env: &mut Environment) -> Result<Option<Number>> {
 
     stmts
         .iter()
-        .try_fold(None, |last, stmt| {
-            let value = interpreter::exec_stmt(&stmt, env)?;
-            Ok(value.or(last))
-        })
-        .map_err(|err: EvalError| anyhow!(err))
+        .try_fold(None, |_, stmt| interpreter::exec_stmt(&stmt, env))
+        .map_err(|err| anyhow!(err))
 }
 
 fn run_repl(env: Environment) -> Result<()> {
