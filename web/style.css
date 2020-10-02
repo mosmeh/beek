@@ -22,7 +22,6 @@ body {
     --background: #272822;
     --size: 1.7;
     --link-color: #F8F8F2;
-    font-family: 'Fira Mono', monospace;
 }
 
 .terminal,
@@ -37,7 +36,7 @@ body {
 .cmd,
 .cmd span,
 .cmd div {
-    font-family: 'Fira Mono', monospace;
+    font-family: 'Fira Mono', monospace !important;
 }
 
 .terminal-output>div,
