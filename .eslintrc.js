@@ -1,15 +1,16 @@
 module.exports = {
-    'env': {
-        'browser': true,
-        'es6': true,
-        'jquery': true,
+    env: {
+        browser: true,
+        es2020: true,
+        jquery: true,
     },
-    'extends': [
-        'eslint:recommended',
-    ],
-    'parserOptions': {
-        'ecmaVersion': 11,
-        'sourceType': 'module',
+    extends: 'google',
+    parserOptions: {
+        ecmaVersion: 11,
+        sourceType: 'module',
     },
-    'rules': {},
+    rules: {
+        'indent': ['error', 4],
+        'require-jsdoc': 'off',
+    },
 };
