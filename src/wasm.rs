@@ -11,11 +11,6 @@ pub fn main() {
 }
 
 #[wasm_bindgen]
-pub fn version() -> JsValue {
-    env!("CARGO_PKG_VERSION").into()
-}
-
-#[wasm_bindgen]
 #[derive(Debug, Copy, Clone)]
 pub enum ResponseKind {
     Message,

@@ -27,30 +27,30 @@ function setColorscheme() {
     };
 }
 
-import('./pkg').then(({version, Repl, ResponseKind}) => {
+const term = $('#terminal').terminal(() => { }, {
+    clear: false,
+    greetings: 'Welcome to [[b;#a6e22e;]beek]',
+}).pause(false);
+
+import('./pkg').then(({Repl, ResponseKind}) => {
     const repl = new Repl();
+    term.settings().completion = (_, cb) => {
+        cb(repl.completion_candidates().split('\n'));
+    };
+    term.set_interpreter((input, term) => {
+        setColorscheme();
 
-    $(() => {
-        $('#terminal').terminal((input, term) => {
-            setColorscheme();
+        const response = repl.run(input);
+        switch (response.kind) {
+        case ResponseKind.Clear:
+            term.clear();
+            break;
+        case ResponseKind.Reset:
+            term.reset();
+            break;
+        }
 
-            const response = repl.run(input);
-            switch (response.kind) {
-            case ResponseKind.Clear:
-                term.clear();
-                break;
-            case ResponseKind.Reset:
-                term.reset();
-                break;
-            }
-
-            return response.message;
-        }, {
-            clear: false,
-            completion: (_, cb) => {
-                cb(repl.completion_candidates().split('\n'));
-            },
-            greetings: `Welcome to [[b;#a6e22e;]beek] ${version()}`,
-        });
+        return response.message;
     });
+    term.resume();
 }).catch(console.error);
