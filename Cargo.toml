@@ -6,25 +6,25 @@ edition = "2018"
 
 [dependencies]
 colored = "2.0.0"
-combine = "4.3.2"
+combine = "4.4.0"
 itertools = "0.9.0"
 rand = "0.7.3"
 ryu = "1.0.5"
 statrs = "0.13.0"
-thiserror = "1.0.21"
+thiserror = "1.0.22"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 atty = "0.2.14"
 dirs = "3.0.1"
-rustyline = "6.3.0"
-rustyline-derive = "0.3.1"
-structopt = "0.3.20"
+rustyline = "7.0.0"
+rustyline-derive = "0.4.0"
+structopt = "0.3.21"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
 getrandom = { version = "0.1.15", features = ["wasm-bindgen"] }
-wasm-bindgen = "0.2.68"
+wasm-bindgen = "0.2.69"
 
 [lib]
 name = "libbeek"
