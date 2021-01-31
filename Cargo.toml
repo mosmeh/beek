@@ -6,15 +6,15 @@ edition = "2018"
 
 [dependencies]
 colored = "2.0.0"
-combine = "4.5.0"
-itertools = "0.9.0"
-rand = "0.8.0"
+combine = "4.5.2"
+itertools = "0.10.0"
+rand = "0.8.3"
 ryu = "1.0.5"
 statrs = "0.13.0"
-thiserror = "1.0.22"
+thiserror = "1.0.23"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-anyhow = "1.0.36"
+anyhow = "1.0.38"
 atty = "0.2.14"
 dirs = "3.0.1"
 rustyline = "7.1.0"
@@ -23,8 +23,8 @@ structopt = "0.3.21"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
-getrandom = { version = "0.2.0", features = ["js"] }
-wasm-bindgen = "0.2.69"
+getrandom = { version = "0.2.2", features = ["js"] }
+wasm-bindgen = "0.2.70"
 
 [lib]
 name = "libbeek"
