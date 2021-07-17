@@ -35,7 +35,7 @@ const term = $('#terminal').terminal(() => { }, {
 import('./pkg').then(({Repl, ResponseKind}) => {
     const repl = new Repl();
     term.settings().completion = (_, cb) => {
-        cb(repl.completion_candidates().split('\n'));
+        cb(repl.completion_candidates);
     };
     term.set_interpreter((input, term) => {
         setColorscheme();

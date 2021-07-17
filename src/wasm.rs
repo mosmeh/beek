@@ -1,9 +1,6 @@
 use crate::repl;
 use wasm_bindgen::prelude::*;
 
-// HACK: returning String or Vec results in "exported global cannot be mutable" error
-// so we substitute them with JsValue containing strings
-
 #[wasm_bindgen(start)]
 pub fn main() {
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
@@ -20,7 +17,7 @@ pub enum ResponseKind {
 
 #[wasm_bindgen]
 pub struct Response {
-    message: JsValue,
+    message: String,
     #[wasm_bindgen(readonly)]
     pub kind: ResponseKind,
 }
@@ -28,7 +25,7 @@ pub struct Response {
 #[wasm_bindgen]
 impl Response {
     #[wasm_bindgen(getter)]
-    pub fn message(&self) -> JsValue {
+    pub fn message(&self) -> String {
         self.message.clone()
     }
 }
@@ -72,12 +69,11 @@ impl Repl {
         }
     }
 
-    pub fn completion_candidates(&self) -> JsValue {
+    #[wasm_bindgen(getter)]
+    pub fn completion_candidates(&self) -> Vec<JsValue> {
         self.inner
             .completion_candidates()
-            .map(|x| x.to_string())
-            .collect::<Vec<_>>()
-            .join("\n")
-            .into()
+            .map(JsValue::from_str)
+            .collect()
     }
 }
