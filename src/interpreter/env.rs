@@ -141,7 +141,7 @@ impl Environment {
         arg_names: &[Identifier],
         expr: &Expression,
     ) -> EvalResult<()> {
-        if let Some(dup) = find_duplicate(&arg_names) {
+        if let Some(dup) = find_duplicate(arg_names) {
             return Err(EvalError::DefinitionError(format!(
                 "Duplicate argument {}",
                 dup

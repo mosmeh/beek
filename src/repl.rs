@@ -186,9 +186,9 @@ User-defined functions:
 fn format_fields<'a>(iter: impl Iterator<Item = (&'a Identifier, &'a Number)>) -> String {
     iter.sorted_by(|(a_name, a_value), (b_name, b_value)| {
         a_value
-            .partial_cmp(&b_value)
+            .partial_cmp(b_value)
             .unwrap() // fields don't contain NaNs
-            .then_with(|| a_name.cmp(&b_name))
+            .then_with(|| a_name.cmp(b_name))
     })
     .group_by(|(_, value)| *value)
     .into_iter()

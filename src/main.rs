@@ -79,7 +79,7 @@ fn run_script(script: &str, env: &mut Environment) -> Result<Option<Number>> {
 
     stmts
         .iter()
-        .try_fold(None, |_, stmt| interpreter::exec_stmt(&stmt, env))
+        .try_fold(None, |_, stmt| interpreter::exec_stmt(stmt, env))
         .map_err(|err| anyhow!(err))
 }
 

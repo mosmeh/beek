@@ -47,7 +47,7 @@ pub fn exec_stmt(stmt: &Statement, env: &mut Environment) -> EvalResult<Option<N
             arg_names,
             expr,
         }) => {
-            env.def_func(name, &arg_names, expr)?;
+            env.def_func(name, arg_names, expr)?;
             None
         }
     };
@@ -128,7 +128,7 @@ fn eval_func(
                 local_env.def_const(arg_name, *value)?;
             }
 
-            eval_expr_local(&expr, &local_env, &global_env)
+            eval_expr_local(expr, &local_env, &global_env)
         }
     }
 }
