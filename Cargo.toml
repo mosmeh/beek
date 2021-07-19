@@ -6,24 +6,24 @@ edition = "2018"
 
 [dependencies]
 colored = "2.0.0"
-combine = "4.5.2"
-itertools = "0.10.0"
-rand = "0.8.3"
+combine = "4.6.0"
+itertools = "0.10.1"
+rand = "0.8.4"
 ryu = "1.0.5"
-statrs = "0.13.0"
-thiserror = "1.0.24"
+statrs = "0.15.0"
+thiserror = "1.0.26"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-anyhow = "1.0.40"
+anyhow = "1.0.42"
 atty = "0.2.14"
 dirs = "3.0.2"
-rustyline = "8.0.0"
+rustyline = "8.2.0"
 rustyline-derive = "0.4.0"
-structopt = "0.3.21"
+structopt = "0.3.22"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
-getrandom = { version = "0.2.2", features = ["js"] }
+getrandom = { version = "0.2.3", features = ["js"] }
 wasm-bindgen = "0.2.74"
 
 [lib]
