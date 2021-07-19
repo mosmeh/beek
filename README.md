@@ -10,10 +10,8 @@ A modern CLI calculator
 
 ## Installation
 
-Clone this repository and run:
-
 ```sh
-cargo install --path .
+cargo install --git https://github.com/mosmeh/beek
 ```
 
 ## Reference
@@ -21,10 +19,10 @@ cargo install --path .
 ### Operators
 
 | Operators                   | Description    |
-|-----------------------------|----------------|
+| --------------------------- | -------------- |
 | `+`                         | addition       |
 | `-`                         | subtraction    |
-| `*`, `·`, `×`, *whitespace* | multiplication |
+| `*`, `·`, `×`, _whitespace_ | multiplication |
 | `/`, `÷`                    | division       |
 | `%`                         | modulo         |
 | `^`, `**`                   | exponentiation |
@@ -33,10 +31,10 @@ cargo install --path .
 Precedence and associativity (ordered from highest precedence to lowest):
 
 | Category       | Operators                    | Associativity |
-|----------------|------------------------------|---------------|
+| -------------- | ---------------------------- | ------------- |
 | factorial      | `!`                          | left          |
 | exponentiation | `^`, `**`                    | right         |
-| multiplication | *whitespace*                 | left          |
+| multiplication | _whitespace_                 | left          |
 | multiplication | `*`, `·`, `×`, `/`, `÷`, `%` | left          |
 | addition       | `+`, `-`                     | left          |
 
@@ -47,10 +45,10 @@ Precedence and associativity (ordered from highest precedence to lowest):
 ### Commands
 
 | Command                                         | Description                                          |
-|-------------------------------------------------|------------------------------------------------------|
+| ----------------------------------------------- | ---------------------------------------------------- |
 | `help`, `?`                                     | show help                                            |
 | `list`, `ls`, `ll`                              | list constants, variables and user-defined functions |
-| `delete`, `del`, `rm` *variable*/*function* ... | delete variable(s) or function(s)                    |
+| `delete`, `del`, `rm` _variable_/_function_ ... | delete variable(s) or function(s)                    |
 | `reset`                                         | reset environment                                    |
 | `clear`, `cls`                                  | clear screen                                         |
 | `quit`, `exit`                                  | quit                                                 |
@@ -73,8 +71,8 @@ Precedence and associativity (ordered from highest precedence to lowest):
 
 ### Math and special constants
 
-- `e`, `π` (`pi`) and `τ` (`tau`)
-- `ans` and `_` store the last result
+-   `e`, `π` (`pi`) and `τ` (`tau`)
+-   `ans` and `_` store the last result
 
 ## Development
 
