@@ -138,19 +138,23 @@ fn exec_command(cmd: Command, env: &mut Environment) -> Response {
             let msg_funcs = env
                 .iter()
                 .filter_map(|(name, item)| match item {
-                    NamedItem::Function(Function::UserDefined { arg_names, .. }) => {
-                        let args = arg_names
-                            .iter()
-                            .map(|x| x.to_string())
-                            .collect::<Vec<_>>()
-                            .join(", ");
-                        Some(format!("{}({})", name, args))
+                    NamedItem::Function(Function::UserDefined { arg_names, expr }) => {
+                        Some(format!(
+                            "{}({}) = {}\n",
+                            name,
+                            arg_names
+                                .iter()
+                                .map(|x| x.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                            expr
+                        ))
                     }
                     _ => None,
                 })
                 .sorted()
                 .collect::<Vec<_>>()
-                .join(", ");
+                .concat();
 
             Response::Message(format!(
                 r#"Constants:
