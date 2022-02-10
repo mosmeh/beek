@@ -35,6 +35,10 @@ module.exports = {
         new WasmPackPlugin({
             crateDirectory: path.resolve(__dirname, '.'),
             outDir: path.resolve(__dirname, 'web', 'pkg'),
+
+            // development mode results in 'Unexpected section' error,
+            // possibly due to unstripped sections in wasm
+            forceMode: 'production',
         }),
         new webpack.ProvidePlugin({
             TextDecoder: ['text-encoding', 'TextDecoder'],
@@ -45,4 +49,10 @@ module.exports = {
     experiments: {
         asyncWebAssembly: true,
     },
+
+    // https://github.com/rust-random/getrandom/issues/224#issuecomment-944329336
+    ignoreWarnings: [
+        (warning) => warning.message ===
+            'Critical dependency: the request of a dependency is an expression',
+    ],
 };
