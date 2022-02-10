@@ -10,7 +10,9 @@ module.exports = {
         path: path.resolve(__dirname, 'public'),
     },
     devServer: {
-        contentBase: path.resolve(__dirname, 'web'),
+        static: {
+            directory: path.resolve(__dirname, 'web'),
+        },
         open: true,
     },
     performance: {
