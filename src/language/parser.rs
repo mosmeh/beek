@@ -12,7 +12,6 @@ use combine::{
     },
     satisfy, sep_by, skip_many, skip_many1, EasyParser, ParseError, Parser, Stream,
 };
-use itertools::Itertools;
 
 pub fn parse(input: &str) -> Result<Vec<Statement>, easy::Errors<char, &str, usize>> {
     let mut script = lex(stmt_list()).skip(eof());
@@ -216,7 +215,7 @@ where
             std::iter::once(lhs)
                 .chain(rhs.into_iter())
                 .rev()
-                .fold1(|a, b| Expression::BinaryOp(BinaryOp::Power, Box::new(b), Box::new(a)))
+                .reduce(|a, b| Expression::BinaryOp(BinaryOp::Power, Box::new(b), Box::new(a)))
                 .unwrap()
         })
 }
